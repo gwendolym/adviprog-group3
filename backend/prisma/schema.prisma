@@ -17,3 +17,15 @@ model User {
   email String @unique
   name String?
 }
+
+// TODO: Add a relation to the User model for the event creator
+// TODO: Add team member availability for the event
+model Event {
+  id        String     @id @default(cuid())
+  name      String
+  dates     DateTime[]
+  startTime String
+  endTime   String
+  timezone  String
+  createdAt DateTime   @default(now())
+}

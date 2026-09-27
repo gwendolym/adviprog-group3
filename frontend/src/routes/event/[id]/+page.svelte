@@ -1,32 +1,42 @@
 <script lang="ts">
-	import { page } from '$app/state';
+	import { parseISO, format } from 'date-fns';
 	import { SvelteSet } from 'svelte/reactivity';
+	import type { PageData } from './$types';
+
+	let { data }: { data: PageData } = $props();
+
+	const event = $derived(data.event);
 
 	type Day = { label: string; date: string };
 
-	"Mock data. This data will come from a backend API."
-	const times = [
-		'9:00 AM',
-		'10:00 AM',
-		'11:00 AM',
-		'12:00 PM',
-		'1:00 PM',
-		'2:00 PM',
-		'3:00 PM',
-		'4:00 PM',
-		'5:00 PM'
-	];
+	function hourOf(label: string) {
+		return Number(label.slice(0, 2));
+	}
 
-	"Mock data. This data will come from a backend API."
-	const days: Day[] = [
-		{ label: 'Tue', date: 'Oct 6' },
-		{ label: 'Wed', date: 'Oct 7' },
-		{ label: 'Thu', date: 'Oct 8' }
-	];
+	function labelOf(hour: number) {
+		return `${String(hour).padStart(2, '0')}:00`;
+	}
 
-	"Mock data. This data will come from a backend API."
-	const teamSlots = new Map<string, number>();
-	const totalParticipants = 1;
+	const start = $derived(hourOf(event.startTime));
+	const end = $derived(hourOf(event.endTime));
+
+	const times = $derived.by(() => {
+		const hourCount = (end >= start ? end - start : end + 24 - start) + 1;
+		return Array.from({ length: hourCount }, (_, i) => labelOf((start + i) % 24));
+	});
+
+	const days = $derived(
+		event.dates.map((date) => {
+			const parsedDate = parseISO(date);
+			return {
+				label: format(parsedDate, 'EEE'),
+				date: format(parsedDate, 'MMM d')
+			};
+		})
+	);
+
+	const gridColumns = $derived(`66px repeat(${days.length}, minmax(0, 1fr))`);
+	const gridMinWidth = $derived(`${66 + days.length * 90}px`);
 
 	let participantName = $state('');
 	let selected = new SvelteSet<string>();
@@ -35,16 +45,18 @@
 	let dragging = $state(false);
 	let dragMode: 'add' | 'remove' = 'add';
 
-	const eventName = $derived(page.params.id === 'test' ? 'test' : `Event ${page.params.id}`);
 	const eventUrl = $derived(typeof window === 'undefined' ? '' : window.location.href);
-	const selectedCount = $derived(selected.size);
 	const canJoin = $derived(participantName.trim().length > 0);
+
+	// There's no participants endpoint yet, so the team panel can only ever
+	// reflect the current viewer once they've joined.
+	const participantCount = $derived(joined ? 1 : 0);
 
 	function cellKey(day: Day, time: string) {
 		return `${day.date}-${time}`;
 	}
 
-	function applyDrag(key: string) {
+	function toggle(key: string) {
 		if (dragMode === 'add') selected.add(key);
 		else selected.delete(key);
 	}
@@ -53,40 +65,28 @@
 		const key = cellKey(day, time);
 		dragMode = selected.has(key) ? 'remove' : 'add';
 		dragging = true;
-		applyDrag(key);
+		toggle(key);
 	}
 
 	function continueDrag(day: Day, time: string) {
-		if (dragging) applyDrag(cellKey(day, time));
+		if (dragging) toggle(cellKey(day, time));
 	}
 
 	function copyLink() {
 		if (eventUrl) navigator.clipboard?.writeText(eventUrl);
-
 		copied = true;
 		setTimeout(() => (copied = false), 1600);
 	}
 
-	function teamCount(day: Day, time: string) {
-		const key = cellKey(day, time);
-		const others = teamSlots.get(key) ?? 0;
-		const mine = joined && selected.has(key) ? 1 : 0;
-
-		return Math.min(others + mine, totalParticipants);
-	}
-
-	function heatClasses(count: number) {
-		if (count >= totalParticipants) return 'bg-green-700 text-white';
-		if (count === 2) return 'bg-green-400 text-green-950';
-		if (count === 1) return 'bg-green-200 text-green-950';
-		return 'bg-red-100 text-red-300';
+	function isTeamAvailable(day: Day, time: string) {
+		return joined && selected.has(cellKey(day, time));
 	}
 </script>
 
 <svelte:window onpointerup={() => (dragging = false)} />
 
 <svelte:head>
-	<title>{eventName} | Meetly</title>
+	<title>{event.name} | Meetly</title>
 </svelte:head>
 
 <section class="min-h-[calc(100vh-160px)] bg-slate-50 px-4 py-8 sm:px-6">
@@ -94,7 +94,10 @@
 		<div class="mb-8 flex flex-wrap items-end justify-between gap-4">
 			<div>
 				<p class="text-sm font-medium text-slate-500">Meeting availability</p>
-				<h1 class="mt-1 text-3xl font-semibold tracking-tight text-slate-900">{eventName}</h1>
+				<h1 class="mt-1 text-3xl font-semibold tracking-tight text-slate-900">{event.name}</h1>
+				<p class="mt-2 text-sm text-slate-500">
+					{event.startTime} - {event.endTime} ({event.timezone})
+				</p>
 			</div>
 
 			<button
@@ -118,7 +121,7 @@
 					</div>
 
 					<span class="rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700">
-						{selectedCount} selected
+						{selected.size} selected
 					</span>
 				</div>
 
@@ -132,8 +135,11 @@
 				</label>
 
 				<div class="mt-5 overflow-x-auto">
-					<div class="min-w-[440px]">
-						<div class="grid grid-cols-[66px_repeat(3,minmax(0,1fr))] border-b border-slate-200">
+					<div style="min-width: {gridMinWidth}">
+						<div
+							class="border-b border-slate-200"
+							style="display: grid; grid-template-columns: {gridColumns}"
+						>
 							<div></div>
 
 							{#each days as day}
@@ -144,7 +150,7 @@
 							{/each}
 						</div>
 
-						<div class="grid grid-cols-[66px_repeat(3,minmax(0,1fr))] select-none">
+						<div class="select-none" style="display: grid; grid-template-columns: {gridColumns}">
 							{#each times as time}
 								<div class="flex h-10 items-center pr-2 text-[11px] text-slate-500">
 									{time}
@@ -194,12 +200,15 @@
 						<p class="mt-1 text-sm text-slate-500">See when everyone is available.</p>
 					</div>
 
-					<span class="text-sm text-slate-500">{totalParticipants} participant</span>
+					<span class="text-sm text-slate-500">{participantCount} participant</span>
 				</div>
 
 				<div class="overflow-x-auto">
-					<div class="min-w-[440px]">
-						<div class="grid grid-cols-[66px_repeat(3,minmax(0,1fr))] border-b border-slate-200">
+					<div style="min-width: {gridMinWidth}">
+						<div
+							class="border-b border-slate-200"
+							style="display: grid; grid-template-columns: {gridColumns}"
+						>
 							<div></div>
 
 							{#each days as day}
@@ -210,19 +219,21 @@
 							{/each}
 						</div>
 
-						<div class="grid grid-cols-[66px_repeat(3,minmax(0,1fr))]">
+						<div style="display: grid; grid-template-columns: {gridColumns}">
 							{#each times as time}
 								<div class="flex h-10 items-center pr-2 text-[11px] text-slate-500">
 									{time}
 								</div>
 
 								{#each days as day}
-									{@const count = teamCount(day, time)}
+									{@const available = isTeamAvailable(day, time)}
 
 									<div
-										class={`flex h-10 items-center justify-center border-b border-l border-slate-200 text-xs font-medium transition ${heatClasses(count)}`}
+										class={`flex h-10 items-center justify-center border-b border-l border-slate-200 text-xs font-medium transition ${
+											available ? 'bg-green-700 text-white' : 'bg-red-100 text-red-300'
+										}`}
 									>
-										{count > 0 ? `${count}/${totalParticipants}` : ''}
+										{available ? `1/${participantCount}` : ''}
 									</div>
 								{/each}
 							{/each}
@@ -239,18 +250,8 @@
 					</span>
 
 					<span class="flex items-center gap-2">
-						<span class="h-3 w-3 rounded-sm bg-green-200"></span>
-						1 available
-					</span>
-
-					<span class="flex items-center gap-2">
-						<span class="h-3 w-3 rounded-sm bg-green-400"></span>
-						2 available
-					</span>
-
-					<span class="flex items-center gap-2">
 						<span class="h-3 w-3 rounded-sm bg-green-700"></span>
-						Everyone available
+						Available
 					</span>
 				</div>
 			</section>

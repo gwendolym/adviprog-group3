@@ -1,24 +1,4 @@
 <script lang="ts">
-	let { data } = $props();
-
-	const features = [
-		{
-			number: '01',
-			title: 'Find a time',
-			description: 'See when everyone is available and find a time that works for the whole team.'
-		},
-		{
-			number: '02',
-			title: 'Group by topic',
-			description: 'Keep recurring meetings, projects, and one-off discussions organized by topic.'
-		},
-		{
-			number: '03',
-			title: 'Notes & documents',
-			description: 'Keep notes and documents with the meeting, so everything is easy to find later.'
-		}
-	];
-
 	const people = ['Christoffer', 'Albin', 'Ivar', 'Hannah'];
 
 	const heatmap = [0, 2, 2, 0, 0, 
@@ -36,12 +16,7 @@
 </script>
 
 <svelte:head>
-	<title>Meetly — Plan meetings together</title>
-
-	<meta
-		name="description"
-		content="Find a time that works for everyone and keep meeting notes and documents in one place."
-	/>
+	<title>Meetly | Plan meetings together</title>
 </svelte:head>
 
 <section class="mx-auto max-w-6xl px-6 pt-20 pb-24 sm:pt-28">
@@ -74,7 +49,7 @@
 				href="#features"
 				class="rounded-lg border border-slate-200 px-5 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
 			>
-				See how it works
+				How it works
 			</a>
 		</div>
 	</div>
@@ -176,21 +151,47 @@
 		</div>
 
 		<div class="mt-12 grid gap-6 md:grid-cols-3">
-			{#each features as feature}
-				<article class="rounded-xl border border-slate-200 bg-white p-6">
-					<div
-						class="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-sm font-medium"
-					>
-						{feature.number}
-					</div>
+			<article class="rounded-xl border border-slate-200 bg-white p-6">
+				<div
+					class="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-sm font-medium"
+				>
+					1
+				</div>
 
-					<h3 class="mt-5 font-medium">{feature.title}</h3>
+				<h3 class="mt-5 font-medium">Find a time</h3>
 
-					<p class="mt-2 text-sm leading-6 text-slate-500">
-						{feature.description}
-					</p>
-				</article>
-			{/each}
+				<p class="mt-2 text-sm leading-6 text-slate-500">
+					See when everyone is available and find a time that works for the whole team.
+				</p>
+			</article>
+
+			<article class="rounded-xl border border-slate-200 bg-white p-6">
+				<div
+					class="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-sm font-medium"
+				>
+					2
+				</div>
+
+				<h3 class="mt-5 font-medium">Group by topic</h3>
+
+				<p class="mt-2 text-sm leading-6 text-slate-500">
+					Keep recurring meetings, projects, and one-off discussions organized by topic.
+				</p>
+			</article>
+
+			<article class="rounded-xl border border-slate-200 bg-white p-6">
+				<div
+					class="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-sm font-medium"
+				>
+					3
+				</div>
+
+				<h3 class="mt-5 font-medium">Notes & documents</h3>
+
+				<p class="mt-2 text-sm leading-6 text-slate-500">
+					Keep notes and documents with the meeting, so everything is easy to find later.
+				</p>
+			</article>
 		</div>
 	</div>
 </section>

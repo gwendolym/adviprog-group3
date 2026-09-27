@@ -2,7 +2,6 @@
 	import favicon from '$lib/assets/calendar-date-range.svg';
 	import './layout.css';
 	let { children } = $props();
-	const currentYear = new Date().getFullYear();
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
@@ -43,7 +42,7 @@
 			<span class="font-semibold">Meetly</span>
 			<a href="https://github.com/gwendolym/adviprog-group3">Github</a>
 			<div class="ml-auto">
-				<span>DH2642 {currentYear}</span>
+				<span>DH2642 2026</span>
 			</div>
 		</div>
 	</footer>
