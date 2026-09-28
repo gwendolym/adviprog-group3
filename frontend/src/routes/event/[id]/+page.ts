@@ -11,11 +11,12 @@ export type EventData = {
 
 export const load: PageLoad = async ({ params, fetch }) => {
 	const response = await fetch(`/api/events/${params.id}`);
-	const data = await response.json();
 
-	if (!response.ok || data === 'Event not found') {
-		throw error(404, 'Event not found');
+	if (!response.ok) {
+		error(404, 'Event not found');
 	}
+
+	const data = await response.json();
 
 	return { event: data as EventData };
 };

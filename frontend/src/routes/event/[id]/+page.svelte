@@ -1,87 +1,82 @@
 <script lang="ts">
-	import { parseISO, format } from 'date-fns';
 	import { SvelteSet } from 'svelte/reactivity';
+	import {
+		buildDays,
+		buildGridColumns,
+		buildGridMinWidth,
+		buildTimes,
+		cellKey,
+		type Day
+	} from '$lib/availability';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
 
 	const event = $derived(data.event);
-
-	type Day = { label: string; date: string };
-
-	function hourOf(label: string) {
-		return Number(label.slice(0, 2));
-	}
-
-	function labelOf(hour: number) {
-		return `${String(hour).padStart(2, '0')}:00`;
-	}
-
-	const start = $derived(hourOf(event.startTime));
-	const end = $derived(hourOf(event.endTime));
-
-	const times = $derived.by(() => {
-		const hourCount = (end >= start ? end - start : end + 24 - start) + 1;
-		return Array.from({ length: hourCount }, (_, i) => labelOf((start + i) % 24));
-	});
-
-	const days = $derived(
-		event.dates.map((date) => {
-			const parsedDate = parseISO(date);
-			return {
-				label: format(parsedDate, 'EEE'),
-				date: format(parsedDate, 'MMM d')
-			};
-		})
-	);
-
-	const gridColumns = $derived(`66px repeat(${days.length}, minmax(0, 1fr))`);
-	const gridMinWidth = $derived(`${66 + days.length * 90}px`);
+	const times = $derived(buildTimes(event.startTime, event.endTime));
+	const days = $derived(buildDays(event.dates));
+	const gridColumns = $derived(buildGridColumns(days.length));
+	const gridMinWidth = $derived(buildGridMinWidth(days.length));
 
 	let participantName = $state('');
-	let selected = new SvelteSet<string>();
+	let selectedCells = new SvelteSet<string>();
 	let copied = $state(false);
 	let joined = $state(false);
 	let dragging = $state(false);
 	let dragMode: 'add' | 'remove' = 'add';
 
-	const eventUrl = $derived(typeof window === 'undefined' ? '' : window.location.href);
 	const canJoin = $derived(participantName.trim().length > 0);
 
 	// There's no participants endpoint yet, so the team panel can only ever
 	// reflect the current viewer once they've joined.
 	const participantCount = $derived(joined ? 1 : 0);
 
-	function cellKey(day: Day, time: string) {
-		return `${day.date}-${time}`;
+	function applyDragMode(key: string) {
+		if (dragMode === 'add') selectedCells.add(key);
+		else selectedCells.delete(key);
 	}
 
-	function toggle(key: string) {
-		if (dragMode === 'add') selected.add(key);
-		else selected.delete(key);
-	}
-
-	function startDrag(day: Day, time: string) {
+	function handleCellPointerDown(day: Day, time: string) {
 		const key = cellKey(day, time);
-		dragMode = selected.has(key) ? 'remove' : 'add';
+		dragMode = selectedCells.has(key) ? 'remove' : 'add';
 		dragging = true;
-		toggle(key);
+		applyDragMode(key);
 	}
 
-	function continueDrag(day: Day, time: string) {
-		if (dragging) toggle(cellKey(day, time));
+	function handleCellPointerEnter(day: Day, time: string) {
+		if (dragging) applyDragMode(cellKey(day, time));
 	}
 
-	function copyLink() {
-		if (eventUrl) navigator.clipboard?.writeText(eventUrl);
+	function handleJoin() {
+		joined = true;
+	}
+
+	function handleCopyLink() {
+		navigator.clipboard.writeText(window.location.href);
 		copied = true;
 		setTimeout(() => (copied = false), 1600);
 	}
 
 	function isTeamAvailable(day: Day, time: string) {
-		return joined && selected.has(cellKey(day, time));
+		return joined && selectedCells.has(cellKey(day, time));
 	}
 </script>
+
+{#snippet gridHeader()}
+	<div
+		class="border-b border-slate-200"
+		style="display: grid; grid-template-columns: {gridColumns}"
+	>
+		<div></div>
+
+		{#each days as day (day.date)}
+			<div class="border-l border-slate-200 px-1 pb-3 text-center">
+				<div class="text-xs text-slate-500">{day.label}</div>
+				<div class="mt-1 text-sm font-medium text-slate-900">{day.date}</div>
+			</div>
+		{/each}
+	</div>
+{/snippet}
 
 <svelte:window onpointerup={() => (dragging = false)} />
 
@@ -103,7 +98,7 @@
 			<button
 				type="button"
 				class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-				onclick={copyLink}
+				onclick={handleCopyLink}
 			>
 				{copied ? 'Copied' : 'Copy link'}
 			</button>
@@ -121,7 +116,7 @@
 					</div>
 
 					<span class="rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700">
-						{selected.size} selected
+						{selectedCells.size} selected
 					</span>
 				</div>
 
@@ -136,29 +131,16 @@
 
 				<div class="mt-5 overflow-x-auto">
 					<div style="min-width: {gridMinWidth}">
-						<div
-							class="border-b border-slate-200"
-							style="display: grid; grid-template-columns: {gridColumns}"
-						>
-							<div></div>
-
-							{#each days as day}
-								<div class="border-l border-slate-200 px-1 pb-3 text-center">
-									<div class="text-xs text-slate-500">{day.label}</div>
-									<div class="mt-1 text-sm font-medium text-slate-900">{day.date}</div>
-								</div>
-							{/each}
-						</div>
+						{@render gridHeader()}
 
 						<div class="select-none" style="display: grid; grid-template-columns: {gridColumns}">
-							{#each times as time}
+							{#each times as time (time)}
 								<div class="flex h-10 items-center pr-2 text-[11px] text-slate-500">
 									{time}
 								</div>
 
-								{#each days as day}
-									{@const key = cellKey(day, time)}
-									{@const isSelected = selected.has(key)}
+								{#each days as day (day.date)}
+									{@const isSelected = selectedCells.has(cellKey(day, time))}
 
 									<button
 										type="button"
@@ -167,8 +149,8 @@
 										class={`h-10 border-b border-l border-slate-200 transition ${
 											isSelected ? 'bg-green-500' : 'bg-white hover:bg-green-100'
 										}`}
-										onpointerdown={() => startDrag(day, time)}
-										onpointerenter={() => continueDrag(day, time)}
+										onpointerdown={() => handleCellPointerDown(day, time)}
+										onpointerenter={() => handleCellPointerEnter(day, time)}
 									></button>
 								{/each}
 							{/each}
@@ -185,7 +167,7 @@
 						type="button"
 						class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-40"
 						disabled={!canJoin}
-						onclick={() => (joined = true)}
+						onclick={handleJoin}
 					>
 						{joined ? 'Availability saved' : 'Join event'}
 					</button>
@@ -205,27 +187,15 @@
 
 				<div class="overflow-x-auto">
 					<div style="min-width: {gridMinWidth}">
-						<div
-							class="border-b border-slate-200"
-							style="display: grid; grid-template-columns: {gridColumns}"
-						>
-							<div></div>
-
-							{#each days as day}
-								<div class="border-l border-slate-200 px-1 pb-3 text-center">
-									<div class="text-xs text-slate-500">{day.label}</div>
-									<div class="mt-1 text-sm font-medium text-slate-900">{day.date}</div>
-								</div>
-							{/each}
-						</div>
+						{@render gridHeader()}
 
 						<div style="display: grid; grid-template-columns: {gridColumns}">
-							{#each times as time}
+							{#each times as time (time)}
 								<div class="flex h-10 items-center pr-2 text-[11px] text-slate-500">
 									{time}
 								</div>
 
-								{#each days as day}
+								{#each days as day (day.date)}
 									{@const available = isTeamAvailable(day, time)}
 
 									<div

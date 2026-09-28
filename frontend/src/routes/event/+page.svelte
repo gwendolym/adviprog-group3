@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { SvelteSet } from 'svelte/reactivity';
-	import { weekdayLabels, timeZones, times, dateKey, buildWeeks, rowLabel } from './calendar';
+	import { weekdayLabels, timeZones, times, dateKey, buildWeeks, rowLabel } from '$lib/calendar';
 	import type { ActionData } from './$types';
 
 	let { form }: { form: ActionData } = $props();
@@ -18,24 +18,28 @@
 	let dragging = $state(false);
 	let dragMode: 'add' | 'remove' = 'add';
 
-	function startDrag(key: string) {
-		dragMode = selectedDates.has(key) ? 'remove' : 'add';
-		dragging = true;
-		toggle(key);
-	}
+	const canCreate = $derived(
+		eventName.trim().length > 0 && selectedDates.size > 0 && startTime < endTime
+	);
 
-	function continueDrag(key: string) {
-		if (dragging) toggle(key);
-	}
-
-	function toggle(key: string) {
+	function applyDragMode(key: string) {
 		if (dragMode === 'add') selectedDates.add(key);
 		else selectedDates.delete(key);
 	}
 
-	const canCreate = $derived(
-		eventName.trim().length > 0 && selectedDates.size > 0 && startTime < endTime
-	);
+	function handleDatePointerDown(key: string) {
+		dragMode = selectedDates.has(key) ? 'remove' : 'add';
+		dragging = true;
+		applyDragMode(key);
+	}
+
+	function handleDatePointerEnter(key: string) {
+		if (dragging) applyDragMode(key);
+	}
+
+	function handleClearDates() {
+		selectedDates.clear();
+	}
 </script>
 
 <svelte:window onpointerup={() => (dragging = false)} />
@@ -47,14 +51,16 @@
 <section class="min-h-[calc(100vh-160px)] bg-slate-50 px-4 py-8 sm:px-6">
 	<div class="mx-auto max-w-6xl">
 		<form method="POST" use:enhance>
-			{#each [...selectedDates] as date}
+			{#each [...selectedDates] as date (date)}
 				<input type="hidden" name="dates" value={date} />
 			{/each}
 
 			<div class="mb-8 text-center">
 				<p class="text-sm font-medium text-slate-500">New event</p>
 
+				<label class="sr-only" for="event-name">Event name</label>
 				<input
+					id="event-name"
 					name="name"
 					bind:value={eventName}
 					placeholder="Event name"
@@ -77,17 +83,17 @@
 						<div class="min-w-[380px]">
 							<div class="grid grid-cols-[40px_repeat(7,1fr)_44px] gap-1 pb-1">
 								<div></div>
-								{#each weekdayLabels as label}
+								{#each weekdayLabels as label (label)}
 									<div class="text-center text-xs font-medium text-slate-500">{label}</div>
 								{/each}
 								<div></div>
 							</div>
 
-							{#each weeks as week}
+							{#each weeks as week (dateKey(week[0]))}
 								<div class="grid grid-cols-[40px_repeat(7,1fr)_44px] items-center gap-1 py-0.5">
 									<span class="text-xs text-slate-500">{rowLabel(week)}</span>
 
-									{#each week as date}
+									{#each week as date (dateKey(date))}
 										{@const key = dateKey(date)}
 										{@const isSelected = selectedDates.has(key)}
 										{@const isToday = key === todayKey}
@@ -101,8 +107,8 @@
 													? 'border-green-500 bg-green-500 text-white'
 													: 'border-slate-200 bg-white text-slate-700 hover:bg-green-50'
 											} ${isToday ? 'font-semibold' : ''}`}
-											onpointerdown={() => startDrag(key)}
-											onpointerenter={() => continueDrag(key)}
+											onpointerdown={() => handleDatePointerDown(key)}
+											onpointerenter={() => handleDatePointerEnter(key)}
 										>
 											{date.getDate()}
 										</button>
@@ -120,7 +126,7 @@
 						<button
 							type="button"
 							class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-							onclick={() => selectedDates.clear()}
+							onclick={handleClearDates}
 						>
 							Clear
 						</button>
@@ -143,7 +149,7 @@
 								bind:value={startTime}
 								class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
 							>
-								{#each times as time}
+								{#each times as time (time)}
 									<option value={time}>{time}</option>
 								{/each}
 							</select>
@@ -158,7 +164,7 @@
 								bind:value={endTime}
 								class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
 							>
-								{#each times as time}
+								{#each times as time (time)}
 									<option value={time}>{time}</option>
 								{/each}
 							</select>
@@ -173,7 +179,7 @@
 								bind:value={timeZone}
 								class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
 							>
-								{#each timeZones as zone}
+								{#each timeZones as zone (zone)}
 									<option value={zone}>{zone}</option>
 								{/each}
 							</select>

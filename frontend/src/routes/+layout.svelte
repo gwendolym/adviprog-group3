@@ -42,7 +42,7 @@
 			<span class="font-semibold">Meetly</span>
 			<a href="https://github.com/gwendolym/adviprog-group3">Github</a>
 			<div class="ml-auto">
-				<span>DH2642 2026</span>
+				<span>DH2643 2026</span>
 			</div>
 		</div>
 	</footer>
