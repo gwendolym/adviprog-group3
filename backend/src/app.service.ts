@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from './prisma/prisma.service.js';
 
 @Injectable()
@@ -11,6 +11,30 @@ export class AppService {
 
   async getUsers() {
     const users = await this.prisma.user.findMany();
-    return users.length > 0 ? users : 'No users';
+    if (users.length === 0) {
+      throw new NotFoundException('No users found'); // Sends 404 response if no users are found
+    }
+    return users;
+  }
+
+  async getEvent(id: string) {
+    const event = await this.prisma.event.findUnique({ where: { id } });
+    if (!event) throw new NotFoundException('Event not found'); // Sends 404 response if event is not found
+    return event;
+  }
+
+  async createEvent(event: {
+    name: string;
+    dates: string[];
+    startTime: string;
+    endTime: string;
+    timezone: string;
+  }) {
+    return this.prisma.event.create({
+      data: {
+        ...event,
+        dates: event.dates.map((date) => new Date(date)),
+      },
+    });
   }
 }
