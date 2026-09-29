@@ -9,14 +9,6 @@ export class AppService {
     return 'This message is from the backend!';
   }
 
-  async getUsers() {
-    const users = await this.prisma.user.findMany();
-    if (users.length === 0) {
-      throw new NotFoundException('No users found'); // Sends 404 response if no users are found
-    }
-    return users;
-  }
-
   async getEvent(id: string) {
     const event = await this.prisma.event.findUnique({ where: { id } });
     if (!event) throw new NotFoundException('Event not found'); // Sends 404 response if event is not found

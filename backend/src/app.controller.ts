@@ -24,10 +24,6 @@ export class AppController {
   getHello(): string {
     return this.appService.getHello();
   }
-  @Get('testdb')
-  getUsers() {
-    return this.appService.getUsers();
-  }
 
   @Get('events/:id')
   getEvent(@Param('id') id: string) {
@@ -40,7 +36,9 @@ export class AppController {
       typeof event?.name !== 'string' ||
       !Array.isArray(event.dates) ||
       event.dates.length === 0 ||
-      event.dates.some((date) => typeof date !== 'string' || Number.isNaN(Date.parse(date))) ||
+      event.dates.some(
+        (date) => typeof date !== 'string' || Number.isNaN(Date.parse(date)),
+      ) ||
       typeof event.startTime !== 'string' ||
       typeof event.endTime !== 'string' ||
       typeof event.timezone !== 'string'

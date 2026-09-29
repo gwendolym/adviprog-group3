@@ -8,15 +8,24 @@ describe('AppController', () => {
   beforeEach(async () => {
     const app: TestingModule = await Test.createTestingModule({
       controllers: [AppController],
-      providers: [AppService],
+      providers: [
+        {
+          provide: AppService,
+          useValue: {
+            getHello: () => 'This message is from the backend!',
+          },
+        },
+      ],
     }).compile();
 
     appController = app.get<AppController>(AppController);
   });
 
   describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toBe('Hello World!');
+    it('should return the backend greeting', () => {
+      expect(appController.getHello()).toBe(
+        'This message is from the backend!',
+      );
     });
   });
 });
