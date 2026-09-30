@@ -6,6 +6,8 @@ config({ path: '../.env' });
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix('api');
-  await app.listen(process.env.PORT ?? 3000);
+  const port = process.env.BACKEND_PORT;
+  if (!port) throw new Error('BACKEND_PORT is not set (see .env.example)');
+  await app.listen(port);
 }
 await bootstrap();
