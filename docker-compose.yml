@@ -7,11 +7,31 @@ services:
     env_file: .env
     environment:
       PORT: ${FRONTEND_PORT}
+      API_URL: http://backend:${BACKEND_PORT}
     ports:
       - "${FRONTEND_PORT}:${FRONTEND_PORT}"
+    depends_on:
+      - backend
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: iprog-backend
+    env_file: .env
+    environment:
+      # Inside the compose network the database is reachable as "db", not localhost
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public
+    ports:
+      - "${BACKEND_PORT}:${BACKEND_PORT}"
     volumes:
-      - ./frontend:/frontend
-      - /frontend/node_modules
+      - ./backend:/backend
+      - /backend/node_modules
+    depends_on:
+      db:
+        condition: service_healthy
+    command: sh -c "npx prisma generate --config prisma7.config.ts && npx prisma migrate deploy --config prisma7.config.ts && npm run start:dev"
   db:
     image: postgres:17
     restart: unless-stopped
@@ -23,6 +43,11 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
 volumes:
   pgdata:
