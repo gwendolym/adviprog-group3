@@ -13,19 +13,30 @@ datasource db {
 }
 
 model User {
-  id Int @id @default(autoincrement())
-  email String @unique
-  name String?
+  id    Int     @id @default(autoincrement())
+  email String  @unique
+  name  String?
 }
 
 // TODO: Add a relation to the User model for the event creator
 // TODO: Add team member availability for the event
 model Event {
-  id        String     @id @default(cuid())
-  name      String
-  dates     DateTime[]
-  startTime String
-  endTime   String
-  timezone  String
-  createdAt DateTime   @default(now())
+  id           String        @id @default(cuid())
+  name         String
+  dates        DateTime[]
+  startTime    String
+  endTime      String
+  timezone     String
+  createdAt    DateTime      @default(now())
+  participants Participant[]
+}
+
+model Participant {
+  id           Int      @id @default(autoincrement())
+  name         String
+  availability String[]
+  eventId      String
+  event        Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, name])
 }

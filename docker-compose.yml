@@ -6,6 +6,8 @@ services:
     container_name: iprog-frontend
     env_file: .env
     environment:
+      HOST: 0.0.0.0 # Listen on all interfaces inside the container
+      ORIGIN: ${ORIGIN} # Allowed origin for form submissions
       PORT: ${FRONTEND_PORT}
       API_URL: http://backend:${BACKEND_PORT}
     ports:

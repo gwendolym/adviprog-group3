@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+	import { page } from '$app/state';
 	import { SvelteSet } from 'svelte/reactivity';
 	import {
 		buildDays,
@@ -9,6 +11,7 @@
 		type Day
 	} from '$lib/availability';
 	import type { PageData } from './$types';
+	import { io, type Socket } from 'socket.io-client';
 
 	let { data }: { data: PageData } = $props();
 
@@ -24,12 +27,23 @@
 	let joined = $state(false);
 	let dragging = $state(false);
 	let dragMode: 'add' | 'remove' = 'add';
+	let participants = $state<Record<string, string[]>>({});
+	let socket: Socket | undefined;
 
 	const canJoin = $derived(participantName.trim().length > 0);
+	const participantCount = $derived(Object.keys(participants).length);
 
-	// There's no participants endpoint yet, so the team panel can only ever
-	// reflect the current viewer once they've joined.
-	const participantCount = $derived(joined ? 1 : 0);
+	onMount(() => {
+		socket = io('http://localhost:8080');
+		socket.on('participants', (all: Record<string, string[]>) => (participants = all));
+		socket.emit('watch', page.params.id);
+		return () => socket?.disconnect();
+	});
+
+	// Push my selection to everyone whenever it changes (after joining)
+	$effect(() => {
+		if (joined) socket?.emit('update', [...selectedCells]);
+	});
 
 	function applyDragMode(key: string) {
 		if (dragMode === 'add') selectedCells.add(key);
@@ -48,6 +62,7 @@
 	}
 
 	function handleJoin() {
+		socket?.emit('join', participantName.trim());
 		joined = true;
 	}
 
@@ -57,8 +72,9 @@
 		setTimeout(() => (copied = false), 1600);
 	}
 
-	function isTeamAvailable(day: Day, time: string) {
-		return joined && selectedCells.has(cellKey(day, time));
+	function availableCount(day: Day, time: string) {
+		const key = cellKey(day, time);
+		return Object.values(participants).filter((cells) => cells.includes(key)).length;
 	}
 </script>
 
@@ -196,14 +212,14 @@
 								</div>
 
 								{#each days as day (day.date)}
-									{@const available = isTeamAvailable(day, time)}
+									{@const count = availableCount(day, time)}
 
 									<div
 										class={`flex h-10 items-center justify-center border-b border-l border-slate-200 text-xs font-medium transition ${
-											available ? 'bg-green-700 text-white' : 'bg-red-100 text-red-300'
+											count > 0 ? 'bg-green-700 text-white' : 'bg-red-100 text-red-300'
 										}`}
 									>
-										{available ? `1/${participantCount}` : ''}
+										{count > 0 ? `${count}/${participantCount}` : ''}
 									</div>
 								{/each}
 							{/each}
