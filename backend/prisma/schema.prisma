@@ -16,8 +16,14 @@ model User {
   id    Int     @id @default(autoincrement())
   email String  @unique
   name  String?
+  roles Roles[]
 
   teams TeamMember[] // User can be associated with multiple TeamMember records.
+}
+
+enum Roles {
+  MEMBER
+  ADMIN
 }
 
 model Team {
