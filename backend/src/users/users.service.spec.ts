@@ -44,6 +44,13 @@ describe('UsersService', () => {
     prismaMock.user.findMany.mockResolvedValue(users);
 
     expect(await usersService.findAll()).toEqual(users);
+    expect(prismaMock.user.findMany).toHaveBeenCalledWith({
+      select: {
+        id: true,
+        email: true,
+        name: true,
+      },
+    });
   });
 
   it('should return one user', async () => {
@@ -56,6 +63,14 @@ describe('UsersService', () => {
     prismaMock.user.findUnique.mockResolvedValue(user);
 
     expect(await usersService.findOne(1)).toEqual(user);
+    expect(prismaMock.user.findUnique).toHaveBeenCalledWith({
+      where: { id: 1 },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+      },
+    });
   });
 
   it('should throw an error when the user does not exist', async () => {
