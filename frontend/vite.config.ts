@@ -9,10 +9,7 @@ import { defineConfig } from 'vitest/config';
 const env = loadEnv('', fileURLToPath(new URL('..', import.meta.url)), '');
 
 export default defineConfig({
-	plugins: [
-		tailwindcss(),
-		sveltekit()
-	],
+	plugins: [tailwindcss(), sveltekit()],
 	test: {
 		expect: { requireAssertions: true },
 		projects: [
