@@ -13,11 +13,12 @@ datasource db {
 }
 
 model User {
-  id           Int     @id @default(autoincrement())
-  email        String  @unique
-  name         String?
-  roles        Roles[]
-  passwordHash String?
+  id            Int     @id @default(autoincrement())
+  email         String  @unique
+  name          String?
+  roles         Roles[]
+  passwordHash  String?
+  emailVerified Boolean @default(false)
 
   teams TeamMember[] // User can be associated with multiple TeamMember records.
 }

@@ -10,11 +10,23 @@ export class SignUpDto {
   @MaxLength(128)
   password: string;
 }
-
 export class SignInDto {
   @IsEmail()
   email: string;
 
   @IsString()
+  password: string;
+}
+export class EmailDto {
+  @IsEmail()
+  email: string;
+}
+export class ResetPasswordDto {
+  @IsString()
+  token: string;
+
+  @IsString()
+  @MinLength(8)
+  @MaxLength(128)
   password: string;
 }

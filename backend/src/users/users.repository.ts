@@ -50,6 +50,14 @@ export class UsersRepository {
   private findRow(email: string): Promise<User | null> {
     return this.prisma.user.findUnique({ where: { email: normalize(email) } });
   }
+  async markEmailVerified(id: number, email: string): Promise<boolean> {
+    const row = await this.prisma.user.findUnique({ where: { id } });
+    if (!row || row.email !== normalize(email)) {
+        return false;
+    }
+    row.emailVerified = true;
+    return true;
+    }
 }
 
 // As the package passes addresses to handlers: an accent typed as two code points matches the stored one.
