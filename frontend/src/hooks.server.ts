@@ -1,0 +1,20 @@
+import { env } from '$env/dynamic/private';
+import type { Handle } from '@sveltejs/kit';
+
+export const handle: Handle = async ({ event, resolve }) => {
+	if (env.API_URL && event.url.pathname.startsWith('/api')) {
+		const target = new URL(event.url.pathname + event.url.search, env.API_URL);
+		const headers = new Headers(event.request.headers);
+		headers.delete('host');
+
+		return fetch(target, {
+			method: event.request.method,
+			headers,
+			body: event.request.body,
+			// @ts-expect-error -- required by Node's fetch when streaming a request body
+			duplex: 'half'
+		});
+	}
+
+	return resolve(event);
+};

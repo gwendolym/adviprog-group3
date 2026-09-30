@@ -1,13 +1,15 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { playwright } from '@vitest/browser-playwright';
+import { fileURLToPath } from 'node:url';
+import { loadEnv } from 'vite';
 import { defineConfig } from 'vitest/config';
 
+// Ports come from the shared .env in the repo root
+const env = loadEnv('', fileURLToPath(new URL('..', import.meta.url)), '');
+
 export default defineConfig({
-	plugins: [
-		tailwindcss(),
-		sveltekit()
-	],
+	plugins: [tailwindcss(), sveltekit()],
 	test: {
 		expect: { requireAssertions: true },
 		projects: [
@@ -37,8 +39,10 @@ export default defineConfig({
 		]
 	},
 	server: {
+		port: Number(env.FRONTEND_PORT),
+		strictPort: true,
 		proxy: {
-			'/api': 'http://localhost:3000'
+			'/api': `http://localhost:${env.BACKEND_PORT}`
 		}
 	}
 });

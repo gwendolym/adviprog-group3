@@ -1,11 +1,9 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
+
 	const people = ['Christoffer', 'Albin', 'Ivar', 'Hannah'];
 
-	const heatmap = [0, 2, 2, 0, 0, 
-					 0, 2, 3, 2, 0, 
-					 0, 2, 3, 2, 0, 
-					 0, 2, 3, 2, 0, 
-					 0, 0, 2, 2, 0];
+	const heatmap = [0, 2, 2, 0, 0, 0, 2, 3, 2, 0, 0, 2, 3, 2, 0, 0, 2, 3, 2, 0, 0, 0, 2, 2, 0];
 
 	function heatClass(level: number) {
 		if (level >= 3) return 'bg-green-700';
@@ -39,7 +37,7 @@
 
 		<div class="mt-8 flex justify-center gap-3">
 			<a
-				href="/event"
+				href={resolve('/event')}
 				class="rounded-lg bg-slate-900 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-slate-800"
 			>
 				Get started
@@ -72,7 +70,7 @@
 					<p class="mb-4 text-xs font-medium tracking-wide text-slate-400 uppercase">Team</p>
 
 					<div class="space-y-2">
-						{#each people as person}
+						{#each people as person (person)}
 							<div class="flex items-center gap-3 rounded-lg px-2 py-2">
 								<div class="h-7 w-7 rounded-full bg-slate-100"></div>
 								<span class="text-sm text-slate-700">{person}</span>
@@ -95,7 +93,7 @@
 
 					<div class="overflow-hidden rounded-xl border border-slate-100">
 						<div class="grid grid-cols-5 border-b border-slate-100 bg-slate-50">
-							{#each ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] as day}
+							{#each ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] as day (day)}
 								<div class="p-3 text-center text-xs font-medium text-slate-500">
 									{day}
 								</div>
@@ -103,7 +101,7 @@
 						</div>
 
 						<div class="grid grid-cols-5">
-							{#each heatmap as level}
+							{#each heatmap as level, i (i)}
 								<div class={`h-12 border-r border-b border-slate-100 ${heatClass(level)}`}></div>
 							{/each}
 						</div>
@@ -128,7 +126,7 @@
 						</div>
 
 						<a
-							href="/event"
+							href={resolve('/event')}
 							class="rounded-lg bg-green-600 px-4 py-2 text-xs font-medium text-white hover:bg-green-700"
 						>
 							Create meeting

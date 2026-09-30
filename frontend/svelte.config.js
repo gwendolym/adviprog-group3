@@ -1,12 +1,11 @@
-import adapter from '@sveltejs/adapter-static';
+import adapter from '@sveltejs/adapter-node';
 
 export default {
 	compilerOptions: {
-		runes: ({ filename }) =>
-			filename.split(/[/\\]/).includes('node_modules') ? undefined : true
+		runes: ({ filename }) => (filename.split(/[/\\]/).includes('node_modules') ? undefined : true)
 	},
 	kit: {
-		adapter: adapter({ fallback: 'index.html' }),
+		adapter: adapter(),
 		env: { dir: '..' }
 	}
 };
