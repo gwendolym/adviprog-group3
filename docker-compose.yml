@@ -1,4 +1,17 @@
 services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: iprog-frontend
+    env_file: .env
+    environment:
+      PORT: ${FRONTEND_PORT}
+    ports:
+      - "${FRONTEND_PORT}:${FRONTEND_PORT}"
+    volumes:
+      - ./frontend:/frontend
+      - /frontend/node_modules
   db:
     image: postgres:17
     restart: unless-stopped
