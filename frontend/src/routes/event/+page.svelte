@@ -1,13 +1,24 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { SvelteSet } from 'svelte/reactivity';
-	import { weekdayLabels, timeZones, times, dateKey, buildWeeks, rowLabel } from '$lib/calendar';
-	import type { ActionData } from './$types';
+	import { addWeeks, format, startOfWeek } from 'date-fns';
+	import {
+		weekdayLabels,
+		timeZones,
+		times,
+		dateKey,
+		buildWeeksFrom,
+		rowLabel
+	} from '$lib/calendar';
+	import type { ActionData, PageData } from './$types';
 
-	let { form }: { form: ActionData } = $props();
+	let { form, data }: { form: ActionData; data: PageData } = $props();
 
 	const todayKey = dateKey(new Date());
-	const weeks = buildWeeks(5);
+	const firstWeek = startOfWeek(new Date(), { weekStartsOn: 1 });
+	let calendarStart = $state(firstWeek);
+	const weeks = $derived(buildWeeksFrom(calendarStart, 5));
+	const calendarLabel = $derived(format(calendarStart, 'MMMM yyyy'));
 
 	let eventName = $state('');
 	let startTime = $state('09:00');
@@ -39,6 +50,14 @@
 
 	function onClearDates() {
 		selectedDates.clear();
+	}
+
+	function onPreviousDates() {
+		if (calendarStart > firstWeek) calendarStart = addWeeks(calendarStart, -5);
+	}
+
+	function onNextDates() {
+		calendarStart = addWeeks(calendarStart, 5);
 	}
 </script>
 
@@ -76,7 +95,29 @@
 				<section class="rounded-xl border border-slate-200 bg-white p-4 sm:p-6">
 					<p class="text-xs font-medium tracking-wide text-slate-400 uppercase">Step 1</p>
 
-					<h2 class="mt-1 font-medium text-slate-900">Choose some dates</h2>
+					<div class="mt-1 flex items-center justify-between gap-3">
+						<h2 class="font-medium text-slate-900">Choose some dates</h2>
+						<div class="flex items-center gap-1">
+							<button
+								type="button"
+								aria-label="Previous dates"
+								class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 font-bold text-slate-500 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+								disabled={calendarStart <= firstWeek}
+								onclick={onPreviousDates}
+							>
+								&lt;
+							</button>
+							<button
+								type="button"
+								aria-label="Next dates"
+								class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 font-bold text-slate-500 hover:bg-slate-100"
+								onclick={onNextDates}
+							>
+								&gt;
+							</button>
+						</div>
+					</div>
+					<p class="mt-1 text-xs text-slate-400">{calendarLabel}</p>
 					<p class="mt-1 text-sm text-slate-500">Click or drag to select the dates that work.</p>
 
 					<div class="mt-5 overflow-x-auto">
@@ -97,12 +138,14 @@
 										{@const key = dateKey(date)}
 										{@const isSelected = selectedDates.has(key)}
 										{@const isToday = key === todayKey}
+										{@const holiday = data.holidays[key]}
 
 										<button
 											type="button"
-											aria-label={date.toLocaleDateString()}
+											aria-label={`${date.toLocaleDateString()}${holiday ? `: ${holiday}` : ''}`}
+											title={holiday}
 											aria-pressed={isSelected}
-											class={`h-9 rounded-md border text-sm transition ${
+											class={`relative h-9 overflow-hidden rounded-md border text-sm transition ${
 												isSelected
 													? 'border-green-500 bg-green-500 text-white'
 													: 'border-slate-200 bg-white text-slate-700 hover:bg-green-50'
@@ -110,6 +153,12 @@
 											onpointerdown={() => onDatePointerDown(key)}
 											onpointerenter={() => onDatePointerEnter(key)}
 										>
+											{#if holiday}
+												<span
+													class="pointer-events-none absolute top-0 right-0 h-2.5 w-2.5 rounded-bl-sm bg-yellow-400"
+													aria-hidden="true"
+												></span>
+											{/if}
 											{date.getDate()}
 										</button>
 									{/each}
