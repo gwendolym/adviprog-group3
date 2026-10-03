@@ -10,6 +10,7 @@ services:
       ORIGIN: ${ORIGIN} # Allowed origin for form submissions
       PORT: ${FRONTEND_PORT}
       API_URL: http://backend:${BACKEND_PORT}
+      PUBLIC_API_URL: http://localhost:${BACKEND_PORT}
     ports:
       - "${FRONTEND_PORT}:${FRONTEND_PORT}"
     depends_on:

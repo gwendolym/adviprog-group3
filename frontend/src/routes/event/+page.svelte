@@ -27,17 +27,17 @@
 		else selectedDates.delete(key);
 	}
 
-	function handleDatePointerDown(key: string) {
+	function onDatePointerDown(key: string) {
 		dragMode = selectedDates.has(key) ? 'remove' : 'add';
 		dragging = true;
 		applyDragMode(key);
 	}
 
-	function handleDatePointerEnter(key: string) {
+	function onDatePointerEnter(key: string) {
 		if (dragging) applyDragMode(key);
 	}
 
-	function handleClearDates() {
+	function onClearDates() {
 		selectedDates.clear();
 	}
 </script>
@@ -107,8 +107,8 @@
 													? 'border-green-500 bg-green-500 text-white'
 													: 'border-slate-200 bg-white text-slate-700 hover:bg-green-50'
 											} ${isToday ? 'font-semibold' : ''}`}
-											onpointerdown={() => handleDatePointerDown(key)}
-											onpointerenter={() => handleDatePointerEnter(key)}
+											onpointerdown={() => onDatePointerDown(key)}
+											onpointerenter={() => onDatePointerEnter(key)}
 										>
 											{date.getDate()}
 										</button>
@@ -126,7 +126,7 @@
 						<button
 							type="button"
 							class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-							onclick={handleClearDates}
+							onclick={onClearDates}
 						>
 							Clear
 						</button>
