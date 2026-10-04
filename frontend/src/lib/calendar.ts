@@ -3,7 +3,11 @@ import { startOfWeek, addDays, format } from 'date-fns';
 export const weekdayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 export const timeZones = ['Europe/Stockholm', 'Europe/London', 'America/New_York', 'Asia/Tokyo'];
 
-export const times = Array.from({ length: 24 }, (_, hour) => `${String(hour).padStart(2, '0')}:00`);
+function formatHour(_value: undefined, hour: number) {
+	return `${String(hour).padStart(2, '0')}:00`;
+}
+
+export const times = Array.from({ length: 24 }, formatHour);
 
 export function dateKey(date: Date): string {
 	return format(date, 'yyyy-MM-dd');
@@ -15,9 +19,17 @@ export function buildWeeks(weekCount: number): Date[][] {
 }
 
 export function buildWeeksFrom(weekStart: Date, weekCount: number): Date[][] {
-	return Array.from({ length: weekCount }, (_, week) =>
-		Array.from({ length: 7 }, (_, day) => addDays(weekStart, week * 7 + day))
-	);
+	const weeks: Date[][] = [];
+
+	for (let week = 0; week < weekCount; week += 1) {
+		const days: Date[] = [];
+		for (let day = 0; day < 7; day += 1) {
+			days.push(addDays(weekStart, week * 7 + day));
+		}
+		weeks.push(days);
+	}
+
+	return weeks;
 }
 
 export function rowLabel(week: Date[]): string {

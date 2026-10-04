@@ -59,9 +59,12 @@
 	function onNextDates() {
 		calendarStart = addWeeks(calendarStart, 5);
 	}
+	function onPointerUp() {
+		dragging = false;
+	}
 </script>
 
-<svelte:window onpointerup={() => (dragging = false)} />
+<svelte:window onpointerup={onPointerUp} />
 
 <svelte:head>
 	<title>New event | Meetly</title>

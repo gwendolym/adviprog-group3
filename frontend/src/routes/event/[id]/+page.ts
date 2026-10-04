@@ -10,7 +10,7 @@ export type EventData = {
 	timezone: string;
 };
 
-export const load: PageLoad = async ({ params, fetch }) => {
+export const load: PageLoad = async function load({ params, fetch }) {
 	const response = await fetch(`/api/events/${params.id}`);
 
 	if (!response.ok) {

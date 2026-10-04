@@ -28,32 +28,54 @@
 	const canJoin = $derived(participantName.trim().length > 0);
 	const participantCount = $derived(Object.keys(participants).length);
 
-	onMount(() => {
+	onMount(function initializeSocket() {
 		socket = io(env.PUBLIC_API_URL || undefined, { path: '/sockets' });
-		socket.on('participants', (all: Record<string, string[]>) => (participants = all));
-		socket.emit('watch', page.params.id);
-		return () => socket?.disconnect();
+		socket.on('participants', onParticipants);
+		socket.on('connect', onSocketConnect);
+		return disconnectSocket;
 	});
 
-	// Push my selection to everyone whenever it changes (after joining)
-	$effect(() => {
-		if (joined) socket?.emit('update', [...selectedCells]);
+	$effect(function syncAvailability() {
+		if (!joined) return;
+
+		const cells = [...selectedCells];
+		const timeout = setTimeout(function sendDebouncedAvailability() {
+			socket?.emit('update', cells);
+		}, 150);
+		return function cancelDebouncedAvailability() {
+			clearTimeout(timeout);
+		};
 	});
+
+	function onParticipants(all: Record<string, string[]>) {
+		participants = all;
+	}
+
+	function onSocketConnect() {
+		socket?.emit('watch', page.params.id);
+		if (joined) socket?.emit('update', [...selectedCells]);
+	}
+
+	function disconnectSocket() {
+		socket?.disconnect();
+	}
 
 	function applyDragMode(key: string) {
 		if (dragMode === 'add') selectedCells.add(key);
 		else selectedCells.delete(key);
 	}
 
-	function onCellPointerDown(day: Day, time: string) {
-		const key = cellKey(day, time);
+	function onAvailabilityPointerDown(event: PointerEvent) {
+		const key = (event.currentTarget as HTMLElement).dataset.key;
+		if (!key) return;
 		dragMode = selectedCells.has(key) ? 'remove' : 'add';
 		dragging = true;
 		applyDragMode(key);
 	}
 
-	function onCellPointerEnter(day: Day, time: string) {
-		if (dragging) applyDragMode(cellKey(day, time));
+	function onAvailabilityPointerEnter(event: PointerEvent) {
+		const key = (event.currentTarget as HTMLElement).dataset.key;
+		if (dragging && key) applyDragMode(key);
 	}
 
 	function onJoin() {
@@ -67,12 +89,20 @@
 	function onCopyLink() {
 		navigator.clipboard.writeText(window.location.href);
 		copied = true;
-		setTimeout(() => (copied = false), 1600);
+		setTimeout(resetCopied, 1600);
+	}
+
+	function resetCopied() {
+		copied = false;
 	}
 
 	function availableCount(day: Day, time: string) {
 		const key = cellKey(day, time);
-		return Object.values(participants).filter((cells) => cells.includes(key)).length;
+		return Object.values(participants).filter(hasCell).length;
+
+		function hasCell(cells: string[]) {
+			return cells.includes(key);
+		}
 	}
 
 	function availabilityClass(count: number) {
@@ -87,6 +117,18 @@
 
 	function isAvailableOnHoveredCell(name: string) {
 		return hoveredAvailability !== null && participants[name]?.includes(hoveredAvailability);
+	}
+
+	function onPointerUp() {
+		dragging = false;
+	}
+
+	function onAvailabilityEnter(event: MouseEvent) {
+		hoveredAvailability = (event.currentTarget as HTMLElement).dataset.key ?? null;
+	}
+
+	function onAvailabilityLeave() {
+		hoveredAvailability = null;
 	}
 </script>
 
@@ -106,7 +148,7 @@
 	</div>
 {/snippet}
 
-<svelte:window onpointerup={() => (dragging = false)} />
+<svelte:window onpointerup={onPointerUp} />
 
 <svelte:head>
 	<title>{event.name} | Meetly</title>
@@ -172,13 +214,14 @@
 
 									<button
 										type="button"
+										data-key={cellKey(day, time)}
 										aria-label={`${day.date} ${time}`}
 										aria-pressed={isSelected}
 										class={`h-10 border-b border-l border-slate-200 transition ${
 											isSelected ? 'bg-green-500' : 'bg-white hover:bg-green-100'
 										}`}
-										onpointerdown={() => onCellPointerDown(day, time)}
-										onpointerenter={() => onCellPointerEnter(day, time)}
+										onpointerdown={onAvailabilityPointerDown}
+										onpointerenter={onAvailabilityPointerEnter}
 									></button>
 								{/each}
 							{/each}
@@ -232,9 +275,10 @@
 									<div
 										role="gridcell"
 										tabindex="-1"
+										data-key={cellKey(day, time)}
 										class={`flex h-10 items-center justify-center border-b border-l border-slate-200 text-xs font-medium transition ${availabilityClass(count)}`}
-										onmouseenter={() => (hoveredAvailability = cellKey(day, time))}
-										onmouseleave={() => (hoveredAvailability = null)}
+										onmouseenter={onAvailabilityEnter}
+										onmouseleave={onAvailabilityLeave}
 									>
 										{count > 0 ? `${count}/${participantCount}` : ''}
 									</div>
@@ -267,11 +311,11 @@
 						<ul class="mt-2 divide-y divide-slate-100 text-sm text-slate-600">
 							{#each Object.keys(participants).sort() as name (name)}
 								<li
-									class={`py-2 first:pt-0 last:pb-0 ${
-										isAvailableOnHoveredCell(name) ? 'rounded bg-green-100 px-2 text-green-800' : ''
+									class={`min-w-0 rounded px-2 py-2 ${
+										isAvailableOnHoveredCell(name) ? 'rounded bg-green-100 text-green-800' : ''
 									}`}
 								>
-									{name}
+									<span class="block truncate" title={name}>{name}</span>
 								</li>
 							{/each}
 						</ul>

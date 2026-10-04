@@ -8,8 +8,12 @@ type HolidayApiItem = {
 	name: { language: string; text: string }[];
 };
 
+function isEnglish(entry: { language: string; text: string }) {
+	return entry.language === 'EN';
+}
+
 // TODO: Implement user nationality detection and use that to fetch holidays for the user's country instead of hardcoding Sweden.
-export const load: PageServerLoad = async ({ fetch }) => {
+export const load: PageServerLoad = async function load({ fetch }) {
 	const year = new Date().getFullYear();
 	const holidays: Record<string, string> = {};
 
@@ -22,7 +26,7 @@ export const load: PageServerLoad = async ({ fetch }) => {
 			const items: HolidayApiItem[] = await response.json();
 
 			for (const item of items) {
-				const name = item.name.find((entry) => entry.language === 'EN')?.text ?? 'Public holiday';
+				const name = item.name.find(isEnglish)?.text ?? 'Public holiday';
 				const endDate = parseISO(item.endDate);
 
 				for (let date = parseISO(item.startDate); date <= endDate; date = addDays(date, 1)) {
@@ -48,7 +52,7 @@ type CreateEventInput = {
 type CreatedEvent = { id: string };
 
 export const actions: Actions = {
-	default: async ({ request, fetch }) => {
+	default: async function createEvent({ request, fetch }) {
 		const form = await request.formData();
 
 		const input: CreateEventInput = {
