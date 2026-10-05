@@ -18,15 +18,15 @@ describe('calendar', () => {
 		expect(dateKey(new Date(2026, 8, 5))).toBe('2026-09-05');
 	});
 
-	it('builds weeks starting on Sunday', () => {
+	it('builds weeks starting on Monday', () => {
 		vi.setSystemTime(new Date(2026, 8, 30));
 
 		const weeks = buildWeeks(2);
 
 		expect(weeks).toHaveLength(2);
 		expect(weeks[0]).toHaveLength(7);
-		expect(dateKey(weeks[0][0])).toBe('2026-09-27');
-		expect(dateKey(weeks[1][0])).toBe('2026-10-04');
+		expect(dateKey(weeks[0][0])).toBe('2026-09-28');
+		expect(dateKey(weeks[1][0])).toBe('2026-10-05');
 	});
 
 	it('returns the correct month label', () => {

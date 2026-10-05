@@ -1,22 +1,19 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+	import { page } from '$app/state';
 	import { SvelteSet } from 'svelte/reactivity';
-	import {
-		buildDays,
-		buildGridColumns,
-		buildGridMinWidth,
-		buildTimes,
-		cellKey,
-		type Day
-	} from '$lib/availability';
+	import { cellKey, type Day } from '$lib/availability';
 	import type { PageData } from './$types';
+	import { io, type Socket } from 'socket.io-client';
+	import { env } from '$env/dynamic/public';
 
 	let { data }: { data: PageData } = $props();
 
 	const event = $derived(data.event);
-	const times = $derived(buildTimes(event.startTime, event.endTime));
-	const days = $derived(buildDays(event.dates));
-	const gridColumns = $derived(buildGridColumns(days.length));
-	const gridMinWidth = $derived(buildGridMinWidth(days.length));
+	const times = $derived(data.times);
+	const days = $derived(data.days);
+	const gridColumns = $derived(data.gridColumns);
+	const gridMinWidth = $derived(data.gridMinWidth);
 
 	let participantName = $state('');
 	let selectedCells = new SvelteSet<string>();
@@ -24,41 +21,114 @@
 	let joined = $state(false);
 	let dragging = $state(false);
 	let dragMode: 'add' | 'remove' = 'add';
+	let participants = $state<Record<string, string[]>>({});
+	let hoveredAvailability = $state<string | null>(null);
+	let socket: Socket | undefined;
 
 	const canJoin = $derived(participantName.trim().length > 0);
+	const participantCount = $derived(Object.keys(participants).length);
 
-	// There's no participants endpoint yet, so the team panel can only ever
-	// reflect the current viewer once they've joined.
-	const participantCount = $derived(joined ? 1 : 0);
+	onMount(function initializeSocket() {
+		socket = io(env.PUBLIC_API_URL || undefined, { path: '/sockets' });
+		socket.on('participants', onParticipants);
+		socket.on('connect', onSocketConnect);
+		return disconnectSocket;
+	});
+
+	$effect(function syncAvailability() {
+		if (!joined) return;
+
+		const cells = [...selectedCells];
+		const timeout = setTimeout(function sendDebouncedAvailability() {
+			socket?.emit('update', cells);
+		}, 150);
+		return function cancelDebouncedAvailability() {
+			clearTimeout(timeout);
+		};
+	});
+
+	function onParticipants(all: Record<string, string[]>) {
+		participants = all;
+	}
+
+	function onSocketConnect() {
+		socket?.emit('watch', page.params.id);
+		if (joined) socket?.emit('update', [...selectedCells]);
+	}
+
+	function disconnectSocket() {
+		socket?.disconnect();
+	}
 
 	function applyDragMode(key: string) {
 		if (dragMode === 'add') selectedCells.add(key);
 		else selectedCells.delete(key);
 	}
 
-	function handleCellPointerDown(day: Day, time: string) {
-		const key = cellKey(day, time);
+	function onAvailabilityPointerDown(event: PointerEvent) {
+		const key = (event.currentTarget as HTMLElement).dataset.key;
+		if (!key) return;
 		dragMode = selectedCells.has(key) ? 'remove' : 'add';
 		dragging = true;
 		applyDragMode(key);
 	}
 
-	function handleCellPointerEnter(day: Day, time: string) {
-		if (dragging) applyDragMode(cellKey(day, time));
+	function onAvailabilityPointerEnter(event: PointerEvent) {
+		const key = (event.currentTarget as HTMLElement).dataset.key;
+		if (dragging && key) applyDragMode(key);
 	}
 
-	function handleJoin() {
+	function onJoin() {
+		socket?.emit('join', {
+			name: participantName.trim(),
+			availability: [...selectedCells]
+		});
 		joined = true;
 	}
 
-	function handleCopyLink() {
+	function onCopyLink() {
 		navigator.clipboard.writeText(window.location.href);
 		copied = true;
-		setTimeout(() => (copied = false), 1600);
+		setTimeout(resetCopied, 1600);
 	}
 
-	function isTeamAvailable(day: Day, time: string) {
-		return joined && selectedCells.has(cellKey(day, time));
+	function resetCopied() {
+		copied = false;
+	}
+
+	function availableCount(day: Day, time: string) {
+		const key = cellKey(day, time);
+		return Object.values(participants).filter(hasCell).length;
+
+		function hasCell(cells: string[]) {
+			return cells.includes(key);
+		}
+	}
+
+	function availabilityClass(count: number) {
+		if (count === 0) return 'bg-red-100 text-red-300';
+
+		const ratio = count / participantCount;
+		if (ratio <= 0.25) return 'bg-green-200 text-green-900';
+		if (ratio <= 0.5) return 'bg-green-400 text-green-950';
+		if (ratio <= 0.75) return 'bg-green-600 text-white';
+		return 'bg-green-800 text-white';
+	}
+
+	function isAvailableOnHoveredCell(name: string) {
+		return hoveredAvailability !== null && participants[name]?.includes(hoveredAvailability);
+	}
+
+	function onPointerUp() {
+		dragging = false;
+	}
+
+	function onAvailabilityEnter(event: MouseEvent) {
+		hoveredAvailability = (event.currentTarget as HTMLElement).dataset.key ?? null;
+	}
+
+	function onAvailabilityLeave() {
+		hoveredAvailability = null;
 	}
 </script>
 
@@ -78,7 +148,7 @@
 	</div>
 {/snippet}
 
-<svelte:window onpointerup={() => (dragging = false)} />
+<svelte:window onpointerup={onPointerUp} />
 
 <svelte:head>
 	<title>{event.name} | Meetly</title>
@@ -98,7 +168,7 @@
 			<button
 				type="button"
 				class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-				onclick={handleCopyLink}
+				onclick={onCopyLink}
 			>
 				{copied ? 'Copied' : 'Copy link'}
 			</button>
@@ -144,13 +214,14 @@
 
 									<button
 										type="button"
+										data-key={cellKey(day, time)}
 										aria-label={`${day.date} ${time}`}
 										aria-pressed={isSelected}
 										class={`h-10 border-b border-l border-slate-200 transition ${
 											isSelected ? 'bg-green-500' : 'bg-white hover:bg-green-100'
 										}`}
-										onpointerdown={() => handleCellPointerDown(day, time)}
-										onpointerenter={() => handleCellPointerEnter(day, time)}
+										onpointerdown={onAvailabilityPointerDown}
+										onpointerenter={onAvailabilityPointerEnter}
 									></button>
 								{/each}
 							{/each}
@@ -167,7 +238,7 @@
 						type="button"
 						class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-40"
 						disabled={!canJoin}
-						onclick={handleJoin}
+						onclick={onJoin}
 					>
 						{joined ? 'Availability saved' : 'Join event'}
 					</button>
@@ -182,7 +253,10 @@
 						<p class="mt-1 text-sm text-slate-500">See when everyone is available.</p>
 					</div>
 
-					<span class="text-sm text-slate-500">{participantCount} participant</span>
+					<span class="text-sm text-slate-500">
+						{participantCount}
+						{participantCount === 1 ? 'participant' : 'participants'}
+					</span>
 				</div>
 
 				<div class="overflow-x-auto">
@@ -196,14 +270,17 @@
 								</div>
 
 								{#each days as day (day.date)}
-									{@const available = isTeamAvailable(day, time)}
+									{@const count = availableCount(day, time)}
 
 									<div
-										class={`flex h-10 items-center justify-center border-b border-l border-slate-200 text-xs font-medium transition ${
-											available ? 'bg-green-700 text-white' : 'bg-red-100 text-red-300'
-										}`}
+										role="gridcell"
+										tabindex="-1"
+										data-key={cellKey(day, time)}
+										class={`flex h-10 items-center justify-center border-b border-l border-slate-200 text-xs font-medium transition ${availabilityClass(count)}`}
+										onmouseenter={onAvailabilityEnter}
+										onmouseleave={onAvailabilityLeave}
 									>
-										{available ? `1/${participantCount}` : ''}
+										{count > 0 ? `${count}/${participantCount}` : ''}
 									</div>
 								{/each}
 							{/each}
@@ -223,6 +300,26 @@
 						<span class="h-3 w-3 rounded-sm bg-green-700"></span>
 						Available
 					</span>
+				</div>
+
+				<div class="mt-5 border-t border-slate-100 pt-4">
+					<h3 class="text-sm font-medium text-slate-900">Team members</h3>
+
+					{#if participantCount === 0}
+						<p class="mt-2 text-sm text-slate-500">No one has joined yet.</p>
+					{:else}
+						<ul class="mt-2 divide-y divide-slate-100 text-sm text-slate-600">
+							{#each Object.keys(participants).sort() as name (name)}
+								<li
+									class={`min-w-0 rounded px-2 py-2 ${
+										isAvailableOnHoveredCell(name) ? 'rounded bg-green-100 text-green-800' : ''
+									}`}
+								>
+									<span class="block truncate" title={name}>{name}</span>
+								</li>
+							{/each}
+						</ul>
+					{/if}
 				</div>
 			</section>
 		</div>
