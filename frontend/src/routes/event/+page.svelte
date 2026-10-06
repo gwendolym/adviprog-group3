@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { SvelteSet } from 'svelte/reactivity';
+	import Select from 'svelte-select';
 	import { addWeeks, format, startOfWeek } from 'date-fns';
 	import {
 		weekdayLabels,
@@ -24,6 +25,26 @@
 	let startTime = $state('09:00');
 	let endTime = $state('17:00');
 	let timeZone = $state('Europe/Stockholm');
+
+	const timeZoneOptions =
+		(
+			Intl as typeof Intl & { supportedValuesOf?: (key: 'timeZone') => string[] }
+		).supportedValuesOf?.('timeZone') ?? timeZones;
+
+	const timeZoneLabels = timeZoneOptions.map((zone) => {
+		const offset =
+			new Intl.DateTimeFormat('en', { timeZone: zone, timeZoneName: 'longOffset' })
+				.formatToParts(new Date())
+				.find((part) => part.type === 'timeZoneName')?.value ?? 'GMT';
+		const offsetLabel =
+			offset === 'GMT'
+				? 'GMT +0:00'
+				: offset
+						.replace(/GMT([+-])(\d{2}):(\d{2})/, 'GMT $1$2:$3')
+						.replace(/([+-])0(\d):/, '$1$2:');
+		const city = zone.split('/').at(-1)?.replaceAll('_', ' ') ?? zone;
+		return { zone, city, label: `(${offsetLabel}) ${city}` };
+	});
 
 	const selectedDates = new SvelteSet<string>();
 	let dragging = $state(false);
@@ -222,20 +243,24 @@
 							</select>
 						</label>
 
-						<label
-							class="flex items-center justify-between gap-4 text-sm font-medium text-slate-700"
-						>
-							Time zone
-							<select
-								name="timezone"
-								bind:value={timeZone}
-								class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
-							>
-								{#each timeZones as zone (zone)}
-									<option value={zone}>{zone}</option>
-								{/each}
-							</select>
-						</label>
+						<div class="font-small flex items-center justify-between gap-4 text-sm text-slate-700">
+							<label for="timezone-selector" class="font-medium">Time zone</label>
+							<div class="relative min-w-0 flex-1">
+								<Select
+									id="timezone-selector"
+									name="timezone"
+									items={timeZoneLabels}
+									bind:value={timeZone}
+									valueMode="id"
+									itemId="zone"
+									label="label"
+									placeholder="Search time zones"
+									clearable={false}
+									class="w-full text-sm"
+									containerStyles="border: 1px solid #e2e8f0; border-radius: 0.5rem; background: white;"
+								/>
+							</div>
+						</div>
 					</div>
 
 					<div class="mt-8 flex items-center justify-end border-t border-slate-100 pt-4">
