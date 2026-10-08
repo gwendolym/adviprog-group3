@@ -49,6 +49,7 @@
 	const selectedDates = new SvelteSet<string>();
 	let dragging = $state(false);
 	let dragMode: 'add' | 'remove' = 'add';
+	let createButtonHovered = $state(false);
 
 	const canCreate = $derived(
 		eventName.trim().length > 0 && selectedDates.size > 0 && startTime < endTime
@@ -107,7 +108,7 @@
 					name="name"
 					bind:value={eventName}
 					placeholder="Event name"
-					class="mt-2 w-full max-w-md rounded-lg border border-slate-200 px-4 py-3 text-center text-xl font-medium text-slate-900 outline-none focus:border-green-500"
+					class={`mt-2 w-full max-w-md rounded-lg border px-4 py-3 text-center text-xl font-medium text-slate-900 outline-none focus:border-green-500 ${createButtonHovered && !eventName.trim() ? 'border-red-300 bg-red-50' : 'border-slate-200'}`}
 				/>
 			</div>
 
@@ -116,7 +117,9 @@
 			{/if}
 
 			<div class="grid gap-6 lg:grid-cols-2">
-				<section class="rounded-xl border border-slate-200 bg-white p-4 sm:p-6">
+				<section
+					class={`rounded-xl border bg-white p-4 sm:p-6 ${createButtonHovered && selectedDates.size === 0 ? 'border-red-300' : 'border-slate-200'}`}
+				>
 					<p class="text-xs font-medium tracking-wide text-slate-400 uppercase">Step 1</p>
 
 					<div class="mt-1 flex items-center justify-between gap-3">
@@ -264,13 +267,19 @@
 					</div>
 
 					<div class="mt-8 flex items-center justify-end border-t border-slate-100 pt-4">
-						<button
-							type="submit"
-							class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-40"
-							disabled={!canCreate}
+						<div
+							role="group"
+							onmouseenter={() => (createButtonHovered = true)}
+							onmouseleave={() => (createButtonHovered = false)}
 						>
-							Create event
-						</button>
+							<button
+								type="submit"
+								class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-40"
+								disabled={!canCreate}
+							>
+								Create event
+							</button>
+						</div>
 					</div>
 				</section>
 			</div>

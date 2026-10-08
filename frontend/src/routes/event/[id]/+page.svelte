@@ -23,6 +23,7 @@
 	let dragMode: 'add' | 'remove' = 'add';
 	let participants = $state<Record<string, string[]>>({});
 	let hoveredAvailability = $state<string | null>(null);
+	let availabilityHovered = $state(false);
 	let socket: Socket | undefined;
 
 	const canJoin = $derived(participantName.trim().length > 0);
@@ -74,11 +75,21 @@
 	}
 
 	function onAvailabilityPointerEnter(event: PointerEvent) {
+		availabilityHovered = true;
 		const key = (event.currentTarget as HTMLElement).dataset.key;
 		if (dragging && key) applyDragMode(key);
 	}
 
+	function onAvailabilityPointerLeave() {
+		availabilityHovered = false;
+	}
+
 	function onJoin() {
+		if (joined) {
+			joined = false;
+			return;
+		}
+
 		socket?.emit('join', {
 			name: participantName.trim(),
 			availability: [...selectedCells]
@@ -190,14 +201,25 @@
 					</span>
 				</div>
 
-				<label class="block text-sm font-medium text-slate-700" for="name">
-					Your name
-					<input
-						id="name"
-						bind:value={participantName}
-						class="mt-2 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-green-500"
-					/>
-				</label>
+				<div class="flex items-end gap-3">
+					<label class="min-w-0 flex-1 text-sm font-medium text-slate-700" for="name">
+						Your name
+						<input
+							id="name"
+							bind:value={participantName}
+							class={`mt-2 w-full rounded-lg border px-3 py-2 text-sm outline-none focus:border-green-500 ${!joined && availabilityHovered ? 'border-red-300 bg-red-50' : 'border-slate-200'}`}
+						/>
+					</label>
+
+					<button
+						type="button"
+						class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-40"
+						disabled={!canJoin}
+						onclick={onJoin}
+					>
+						{joined ? 'Logout' : 'Login'}
+					</button>
+				</div>
 
 				<div class="mt-5 overflow-x-auto">
 					<div style="min-width: {gridMinWidth}">
@@ -222,6 +244,7 @@
 										}`}
 										onpointerdown={onAvailabilityPointerDown}
 										onpointerenter={onAvailabilityPointerEnter}
+										onpointerleave={onAvailabilityPointerLeave}
 									></button>
 								{/each}
 							{/each}
@@ -230,18 +253,9 @@
 				</div>
 
 				<div
-					class="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4"
+					class="mt-5 flex flex-wrap gap-4 border-t border-slate-100 pt-4 text-xs text-slate-500"
 				>
 					<p class="text-xs text-slate-500">Click or drag to select your availability.</p>
-
-					<button
-						type="button"
-						class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-40"
-						disabled={!canJoin}
-						onclick={onJoin}
-					>
-						{joined ? 'Availability saved' : 'Join event'}
-					</button>
 				</div>
 			</section>
 
