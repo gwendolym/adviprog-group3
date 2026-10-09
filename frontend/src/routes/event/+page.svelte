@@ -61,13 +61,14 @@
 	}
 
 	function onDatePointerDown(key: string) {
+		if (key < todayKey) return;
 		dragMode = selectedDates.has(key) ? 'remove' : 'add';
 		dragging = true;
 		applyDragMode(key);
 	}
 
 	function onDatePointerEnter(key: string) {
-		if (dragging) applyDragMode(key);
+		if (dragging && key >= todayKey) applyDragMode(key);
 	}
 
 	function onClearDates() {
@@ -165,6 +166,7 @@
 										{@const key = dateKey(date)}
 										{@const isSelected = selectedDates.has(key)}
 										{@const isToday = key === todayKey}
+										{@const isPast = key < todayKey}
 										{@const holiday = data.holidays[key]}
 
 										<button
@@ -172,11 +174,15 @@
 											aria-label={`${date.toLocaleDateString()}${holiday ? `: ${holiday}` : ''}`}
 											title={holiday}
 											aria-pressed={isSelected}
+											disabled={isPast}
 											class={`relative h-9 overflow-hidden rounded-md border text-sm transition ${
 												isSelected
 													? 'border-green-500 bg-green-500 text-white'
-													: 'border-slate-200 bg-white text-slate-700 hover:bg-green-50'
+													: isPast
+														? 'border-slate-200 bg-slate-100 text-slate-400'
+														: 'border-slate-200 bg-white text-slate-700 hover:bg-green-50'
 											} ${isToday ? 'font-semibold' : ''}`}
+											class:cursor-not-allowed={isPast}
 											onpointerdown={() => onDatePointerDown(key)}
 											onpointerenter={() => onDatePointerEnter(key)}
 										>
