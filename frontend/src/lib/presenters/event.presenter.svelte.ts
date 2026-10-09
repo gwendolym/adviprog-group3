@@ -5,18 +5,18 @@ import { timeZones, dateKey, buildWeeksFrom } from '$lib/calendar';
 export function createEventPresenter() {
 	const todayKey = dateKey(new SvelteDate());
 	const firstWeek = startOfWeek(new SvelteDate(), { weekStartsOn: 1 });
-	let calendarStart = $state(firstWeek);
+	let calendarStart = $state(firstWeek); // Reactive calendar state must be mutable.
 	const weeks = $derived(buildWeeksFrom(calendarStart, 5));
 	const calendarLabel = $derived(format(calendarStart, 'MMMM yyyy'));
 
-	let eventName = $state('');
-	let startTime = $state('09:00');
-	let endTime = $state('17:00');
-	let timeZone = $state('Europe/Stockholm');
+	let eventName = $state(''); // Reactive form state must be mutable.
+	let startTime = $state('09:00'); // Reactive form state must be mutable.
+	let endTime = $state('17:00'); // Reactive form state must be mutable.
+	let timeZone = $state('Europe/Stockholm'); // Reactive form state must be mutable.
 	const selectedDates = new SvelteSet<string>();
-	let dragging = $state(false);
-	let dragMode = $state<'add' | 'remove'>('add');
-	let createButtonHovered = $state(false);
+	let dragging = $state(false); // Reactive pointer state must be mutable.
+	let dragMode = $state<'add' | 'remove'>('add'); // Reactive pointer state must be mutable.
+	let createButtonHovered = $state(false); // Reactive hover state must be mutable.
 
 	const timeZoneOptions =
 		(
@@ -43,6 +43,7 @@ export function createEventPresenter() {
 	);
 
 	function applyDragMode(key: string) {
+		// Set mutation preserves the selected-date interaction state.
 		if (dragMode === 'add') selectedDates.add(key);
 		else selectedDates.delete(key);
 	}
@@ -112,6 +113,7 @@ export function createEventPresenter() {
 			if (dragging && key >= todayKey) applyDragMode(key);
 		},
 		clearDates() {
+			// Set mutation clears the selected-date interaction state.
 			selectedDates.clear();
 		},
 		previousDates() {

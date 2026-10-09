@@ -5,7 +5,7 @@
 	import { createEventPresenter } from '$lib/presenters/event.presenter.svelte';
 	import type { ActionData, PageData } from './$types';
 
-	let { form, data }: { form: ActionData; data: PageData } = $props();
+	let { form, data }: { form: ActionData; data: PageData } = $props(); // Svelte updates form props.
 	const eventPresenter = createEventPresenter();
 </script>
 

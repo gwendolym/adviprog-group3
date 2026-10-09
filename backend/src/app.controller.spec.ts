@@ -4,7 +4,7 @@ import { AppService } from './app.service.js';
 import { PrismaService } from './prisma/prisma.service.js';
 
 describe('AppController', () => {
-  let appController: AppController;
+  let appController: AppController; // Test setup assigns the controller before each case.
 
   beforeEach(async () => {
     const app: TestingModule = await Test.createTestingModule({

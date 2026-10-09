@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { UsersService } from './users.service.js';
 
 describe('UsersService', () => {
-  let usersService: UsersService;
+  let usersService: UsersService; // Test setup assigns the service before each case.
 
   const prismaMock = {
     user: {

@@ -3,16 +3,16 @@ import { cellKey, type Day } from '$lib/availability';
 import { createAvailabilitySocket, type Participants } from '$lib/persistence/availability.socket';
 
 export function createAvailabilityPresenter(eventId: string) {
-	let participantName = $state('');
+	let participantName = $state(''); // Reactive form state must be mutable.
 	const selectedCells = new SvelteSet<string>();
-	let copied = $state(false);
-	let joined = $state(false);
-	let dragging = $state(false);
-	let dragMode = $state<'add' | 'remove'>('add');
-	let participants = $state<Participants>({});
-	let hoveredAvailability = $state<string | null>(null);
-	let availabilityHovered = $state(false);
-	let socket: ReturnType<typeof createAvailabilitySocket> | undefined;
+	let copied = $state(false); // Reactive feedback state must be mutable.
+	let joined = $state(false); // Reactive connection state must be mutable.
+	let dragging = $state(false); // Reactive pointer state must be mutable.
+	let dragMode = $state<'add' | 'remove'>('add'); // Reactive pointer state must be mutable.
+	let participants = $state<Participants>({}); // Reactive server state must be mutable.
+	let hoveredAvailability = $state<string | null>(null); // Reactive hover state must be mutable.
+	let availabilityHovered = $state(false); // Reactive hover state must be mutable.
+	let socket: ReturnType<typeof createAvailabilitySocket> | undefined; // Socket is assigned during mount.
 
 	const canJoin = $derived(participantName.trim().length > 0);
 	const participantCount = $derived(Object.keys(participants).length);
@@ -40,6 +40,7 @@ export function createAvailabilityPresenter(eventId: string) {
 	}
 
 	function applyDragMode(key: string) {
+		// Set mutation preserves the drag-selection interaction state.
 		if (dragMode === 'add') selectedCells.add(key);
 		else selectedCells.delete(key);
 	}

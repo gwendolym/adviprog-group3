@@ -2,7 +2,7 @@
 	import { resolve } from '$app/paths';
 	import favicon from '$lib/assets/calendar-date-range.svg';
 	import './layout.css';
-	let { children } = $props();
+	let { children } = $props(); // Svelte updates route props through this binding.
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>

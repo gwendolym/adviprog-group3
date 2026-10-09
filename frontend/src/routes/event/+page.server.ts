@@ -1,5 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { addDays, format, parseISO } from 'date-fns';
+import { eachDayOfInterval, format, parseISO } from 'date-fns';
 import type { Actions, PageServerLoad } from './$types';
 
 type HolidayApiItem = {
@@ -29,7 +29,7 @@ export const load: PageServerLoad = async function load({ fetch }) {
 				const name = item.name.find(isEnglish)?.text ?? 'Public holiday';
 				const endDate = parseISO(item.endDate);
 
-				for (let date = parseISO(item.startDate); date <= endDate; date = addDays(date, 1)) {
+				for (const date of eachDayOfInterval({ start: parseISO(item.startDate), end: endDate })) {
 					holidays[format(date, 'yyyy-MM-dd')] = name;
 				}
 			}
@@ -75,7 +75,7 @@ export const actions: Actions = {
 			});
 		}
 
-		let response: Response;
+		let response: Response; // Assignment is needed to report fetch failures outside the try block.
 
 		try {
 			response = await fetch('/api/events', {

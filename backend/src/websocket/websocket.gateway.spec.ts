@@ -11,7 +11,7 @@ describe('WebsocketGateway', () => {
 	const eventId = 'event-1';
 	const participantName = 'Ada';
 	const cells = ['Oct 2-09:00'];
-	let gateway: WebsocketGateway;
+	let gateway: WebsocketGateway; // Test setup assigns the gateway before each case.
 
 	function createClient(data: Record<string, unknown> = {}) {
 		return { data } as never;
