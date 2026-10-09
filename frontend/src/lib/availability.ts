@@ -19,17 +19,23 @@ export function buildTimes(startTime: string, endTime: string): string[] {
 	const end = hourOf(endTime);
 	const hourCount = (end >= start ? end - start : end + 24 - start) + 1;
 
-	return Array.from({ length: hourCount }, (_, i) => labelOf((start + i) % 24));
+	function timeAtIndex(_value: undefined, index: number) {
+		return labelOf((start + index) % 24);
+	}
+
+	return Array.from({ length: hourCount }, timeAtIndex);
 }
 
 export function buildDays(dates: string[]): Day[] {
-	return dates.map((date) => {
+	function formatDay(date: string): Day {
 		const parsedDate = parseISO(date);
 		return {
 			label: format(parsedDate, 'EEE'),
 			date: format(parsedDate, 'MMM d')
 		};
-	});
+	}
+
+	return dates.map(formatDay);
 }
 
 export function cellKey(day: Day, time: string) {

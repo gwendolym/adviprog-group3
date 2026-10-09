@@ -1,5 +1,45 @@
 import { fail, redirect } from '@sveltejs/kit';
-import type { Actions } from './$types';
+import { addDays, format, parseISO } from 'date-fns';
+import type { Actions, PageServerLoad } from './$types';
+
+type HolidayApiItem = {
+	startDate: string;
+	endDate: string;
+	name: { language: string; text: string }[];
+};
+
+function isEnglish(entry: { language: string; text: string }) {
+	return entry.language === 'EN';
+}
+
+// TODO: Implement user nationality detection and use that to fetch holidays for the user's country instead of hardcoding Sweden.
+export const load: PageServerLoad = async function load({ fetch }) {
+	const year = new Date().getFullYear();
+	const holidays: Record<string, string> = {};
+
+	try {
+		const response = await fetch(
+			`https://openholidaysapi.org/PublicHolidays?countryIsoCode=SE&languageIsoCode=EN&validFrom=${year}-01-01&validTo=${year + 1}-12-31`
+		);
+
+		if (response.ok) {
+			const items: HolidayApiItem[] = await response.json();
+
+			for (const item of items) {
+				const name = item.name.find(isEnglish)?.text ?? 'Public holiday';
+				const endDate = parseISO(item.endDate);
+
+				for (let date = parseISO(item.startDate); date <= endDate; date = addDays(date, 1)) {
+					holidays[format(date, 'yyyy-MM-dd')] = name;
+				}
+			}
+		}
+	} catch (error) {
+		console.error('Failed to load Swedish public holidays', error);
+	}
+
+	return { holidays };
+};
 
 type CreateEventInput = {
 	name: string;
@@ -12,7 +52,7 @@ type CreateEventInput = {
 type CreatedEvent = { id: string };
 
 export const actions: Actions = {
-	default: async ({ request, fetch }) => {
+	default: async function createEvent({ request, fetch }) {
 		const form = await request.formData();
 
 		const input: CreateEventInput = {

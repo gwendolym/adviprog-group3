@@ -1,5 +1,6 @@
 import { error } from '@sveltejs/kit';
 import type { PageLoad } from './$types';
+import { buildDays, buildGridColumns, buildGridMinWidth, buildTimes } from '$lib/availability';
 
 export type EventData = {
 	name: string;
@@ -9,7 +10,7 @@ export type EventData = {
 	timezone: string;
 };
 
-export const load: PageLoad = async ({ params, fetch }) => {
+export const load: PageLoad = async function load({ params, fetch }) {
 	const response = await fetch(`/api/events/${params.id}`);
 
 	if (!response.ok) {
@@ -17,6 +18,14 @@ export const load: PageLoad = async ({ params, fetch }) => {
 	}
 
 	const data = await response.json();
+	const event = data as EventData;
+	const days = buildDays(event.dates);
 
-	return { event: data as EventData };
+	return {
+		event,
+		times: buildTimes(event.startTime, event.endTime),
+		days,
+		gridColumns: buildGridColumns(days.length),
+		gridMinWidth: buildGridMinWidth(days.length)
+	};
 };
