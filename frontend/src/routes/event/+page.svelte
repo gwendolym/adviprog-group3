@@ -17,7 +17,19 @@
 
 <section class="min-h-[calc(100vh-160px)] bg-slate-50 px-4 py-8 sm:px-6">
 	<div class="mx-auto max-w-6xl">
-		<form method="POST" use:enhance>
+		<form
+			method="POST"
+			use:enhance={() => {
+				eventPresenter.startSubmitting();
+				return async ({ update }) => {
+					try {
+						await update();
+					} finally {
+						eventPresenter.finishSubmitting();
+					}
+				};
+			}}
+		>
 			{#each [...eventPresenter.selectedDates] as date (date)}
 				<input type="hidden" name="dates" value={date} />
 			{/each}
@@ -210,9 +222,18 @@
 							<button
 								type="submit"
 								class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-40"
-								disabled={!eventPresenter.canCreate}
+								disabled={!eventPresenter.canCreate || eventPresenter.submitting}
 							>
-								Create event
+								{#if eventPresenter.submitting}
+									<span
+										class="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent align-[-0.2em]"
+										role="status"
+										aria-label="Creating event"
+									></span>
+									Creating...
+								{:else}
+									Create event
+								{/if}
 							</button>
 						</div>
 					</div>

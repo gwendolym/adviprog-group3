@@ -8,15 +8,16 @@ export function createEventPresenter() {
 	let calendarStart = $state(firstWeek); // Reactive calendar state must be mutable.
 	const weeks = $derived(buildWeeksFrom(calendarStart, 5));
 	const calendarLabel = $derived(format(calendarStart, 'MMMM yyyy'));
+	const selectedDates = new SvelteSet<string>();
 
 	let eventName = $state(''); // Reactive form state must be mutable.
 	let startTime = $state('09:00'); // Reactive form state must be mutable.
 	let endTime = $state('17:00'); // Reactive form state must be mutable.
 	let timeZone = $state('Europe/Stockholm'); // Reactive form state must be mutable.
-	const selectedDates = new SvelteSet<string>();
 	let dragging = $state(false); // Reactive pointer state must be mutable.
 	let dragMode = $state<'add' | 'remove'>('add'); // Reactive pointer state must be mutable.
 	let createButtonHovered = $state(false); // Reactive hover state must be mutable.
+	let submitting = $state(false); // Reactive request state must be mutable.
 
 	const timeZoneOptions =
 		(
@@ -85,6 +86,9 @@ export function createEventPresenter() {
 		get createButtonHovered() {
 			return createButtonHovered;
 		},
+		get submitting() {
+			return submitting;
+		},
 		setEventName(name: string) {
 			eventName = name;
 		},
@@ -113,7 +117,6 @@ export function createEventPresenter() {
 			if (dragging && key >= todayKey) applyDragMode(key);
 		},
 		clearDates() {
-			// Set mutation clears the selected-date interaction state.
 			selectedDates.clear();
 		},
 		previousDates() {
@@ -124,6 +127,12 @@ export function createEventPresenter() {
 		},
 		setCreateButtonHovered(value: boolean) {
 			createButtonHovered = value;
+		},
+		startSubmitting() {
+			submitting = true;
+		},
+		finishSubmitting() {
+			submitting = false;
 		},
 		stopDragging() {
 			dragging = false;

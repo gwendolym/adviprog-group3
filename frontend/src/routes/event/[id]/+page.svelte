@@ -5,7 +5,7 @@
 	import { createAvailabilityPresenter } from '$lib/presenters/availability.presenter.svelte';
 	import type { PageData } from './$types';
 
-	let { data }: { data: PageData } = $props(); // Svelte updates route props.
+	let { data }: { data: PageData } = $props(); // Svelte updates route props through this binding.
 	const availability = createAvailabilityPresenter(page.params.id ?? '');
 
 	const event = $derived(data.event);
@@ -201,7 +201,7 @@
 						<p class="mt-2 text-sm text-slate-500">No one has joined yet.</p>
 					{:else}
 						<ul class="mt-2 divide-y divide-slate-100 text-sm text-slate-600">
-							{#each Object.keys(availability.participants).toSorted() as name (name)}
+							{#each Object.keys(availability.participants).sort() as name (name)}
 								<li
 									class={`min-w-0 rounded px-2 py-2 ${
 										availability.isAvailableOnHoveredCell(name)
