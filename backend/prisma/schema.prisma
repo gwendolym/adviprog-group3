@@ -16,6 +16,25 @@ model User {
   id    Int     @id @default(autoincrement())
   email String  @unique
   name  String?
+
+  teams TeamMember[] // User can be associated with multiple TeamMember records.
+}
+
+model Team {
+  id        String       @id @default(cuid())
+  name      String
+  createdAt DateTime     @default(now())
+  members   TeamMember[] // A team can be associated with multiple TeamMember records.
+}
+
+model TeamMember {
+  teamId   String
+  userId   Int
+  joinedAt DateTime @default(now())
+  team     Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([teamId, userId])
 }
 
 // TODO: Add a relation to the User model for the event creator
