@@ -19,17 +19,9 @@ export function buildWeeks(weekCount: number): Date[][] {
 }
 
 export function buildWeeksFrom(weekStart: Date, weekCount: number): Date[][] {
-	const weeks: Date[][] = [];
-
-	for (let week = 0; week < weekCount; week += 1) {
-		const days: Date[] = [];
-		for (let day = 0; day < 7; day += 1) {
-			days.push(addDays(weekStart, week * 7 + day));
-		}
-		weeks.push(days);
-	}
-
-	return weeks;
+	return Array.from({ length: weekCount }, (_, week) =>
+		Array.from({ length: 7 }, (_, day) => addDays(weekStart, week * 7 + day))
+	);
 }
 
 export function rowLabel(week: Date[]): string {

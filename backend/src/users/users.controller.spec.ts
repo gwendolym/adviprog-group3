@@ -3,7 +3,7 @@ import { UsersController } from './users.controller.js';
 import { UsersService } from './users.service.js';
 
 describe('UsersController', () => {
-  let controller: UsersController;
+  let controller: UsersController; // Test setup assigns the controller before each case.
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({

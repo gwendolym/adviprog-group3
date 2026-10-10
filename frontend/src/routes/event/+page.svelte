@@ -1,70 +1,15 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { SvelteSet } from 'svelte/reactivity';
-	import { addWeeks, format, startOfWeek } from 'date-fns';
-	import {
-		weekdayLabels,
-		timeZones,
-		times,
-		dateKey,
-		buildWeeksFrom,
-		rowLabel
-	} from '$lib/calendar';
+	import Select from 'svelte-select';
+	import { weekdayLabels, times, dateKey, rowLabel } from '$lib/calendar';
+	import { createEventPresenter } from '$lib/presenters/event.presenter.svelte';
 	import type { ActionData, PageData } from './$types';
 
-	let { form, data }: { form: ActionData; data: PageData } = $props();
-
-	const todayKey = dateKey(new Date());
-	const firstWeek = startOfWeek(new Date(), { weekStartsOn: 1 });
-	let calendarStart = $state(firstWeek);
-	const weeks = $derived(buildWeeksFrom(calendarStart, 5));
-	const calendarLabel = $derived(format(calendarStart, 'MMMM yyyy'));
-
-	let eventName = $state('');
-	let startTime = $state('09:00');
-	let endTime = $state('17:00');
-	let timeZone = $state('Europe/Stockholm');
-
-	const selectedDates = new SvelteSet<string>();
-	let dragging = $state(false);
-	let dragMode: 'add' | 'remove' = 'add';
-
-	const canCreate = $derived(
-		eventName.trim().length > 0 && selectedDates.size > 0 && startTime < endTime
-	);
-
-	function applyDragMode(key: string) {
-		if (dragMode === 'add') selectedDates.add(key);
-		else selectedDates.delete(key);
-	}
-
-	function onDatePointerDown(key: string) {
-		dragMode = selectedDates.has(key) ? 'remove' : 'add';
-		dragging = true;
-		applyDragMode(key);
-	}
-
-	function onDatePointerEnter(key: string) {
-		if (dragging) applyDragMode(key);
-	}
-
-	function onClearDates() {
-		selectedDates.clear();
-	}
-
-	function onPreviousDates() {
-		if (calendarStart > firstWeek) calendarStart = addWeeks(calendarStart, -5);
-	}
-
-	function onNextDates() {
-		calendarStart = addWeeks(calendarStart, 5);
-	}
-	function onPointerUp() {
-		dragging = false;
-	}
+	let { form, data }: { form: ActionData; data: PageData } = $props(); // Svelte updates form props.
+	const eventPresenter = createEventPresenter();
 </script>
 
-<svelte:window onpointerup={onPointerUp} />
+<svelte:window onpointerup={eventPresenter.stopDragging} />
 
 <svelte:head>
 	<title>New event | Meetly</title>
@@ -72,8 +17,20 @@
 
 <section class="min-h-[calc(100vh-160px)] bg-slate-50 px-4 py-8 sm:px-6">
 	<div class="mx-auto max-w-6xl">
-		<form method="POST" use:enhance>
-			{#each [...selectedDates] as date (date)}
+		<form
+			method="POST"
+			use:enhance={() => {
+				eventPresenter.startSubmitting();
+				return async ({ update }) => {
+					try {
+						await update();
+					} finally {
+						eventPresenter.finishSubmitting();
+					}
+				};
+			}}
+		>
+			{#each [...eventPresenter.selectedDates] as date (date)}
 				<input type="hidden" name="dates" value={date} />
 			{/each}
 
@@ -84,9 +41,11 @@
 				<input
 					id="event-name"
 					name="name"
-					bind:value={eventName}
+					value={eventPresenter.eventName}
+					oninput={(event) =>
+						eventPresenter.setEventName((event.currentTarget as HTMLInputElement).value)}
 					placeholder="Event name"
-					class="mt-2 w-full max-w-md rounded-lg border border-slate-200 px-4 py-3 text-center text-xl font-medium text-slate-900 outline-none focus:border-green-500"
+					class={`mt-2 w-full max-w-md rounded-lg border px-4 py-3 text-center text-xl font-medium text-slate-900 outline-none focus:border-green-500 ${eventPresenter.createButtonHovered && !eventPresenter.eventName.trim() ? 'border-red-300 bg-red-50' : 'border-slate-200'}`}
 				/>
 			</div>
 
@@ -95,7 +54,9 @@
 			{/if}
 
 			<div class="grid gap-6 lg:grid-cols-2">
-				<section class="rounded-xl border border-slate-200 bg-white p-4 sm:p-6">
+				<section
+					class={`rounded-xl border bg-white p-4 sm:p-6 ${eventPresenter.createButtonHovered && eventPresenter.selectedDates.size === 0 ? 'border-red-300' : 'border-slate-200'}`}
+				>
 					<p class="text-xs font-medium tracking-wide text-slate-400 uppercase">Step 1</p>
 
 					<div class="mt-1 flex items-center justify-between gap-3">
@@ -105,8 +66,8 @@
 								type="button"
 								aria-label="Previous dates"
 								class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 font-bold text-slate-500 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
-								disabled={calendarStart <= firstWeek}
-								onclick={onPreviousDates}
+								disabled={eventPresenter.calendarStart <= eventPresenter.firstWeek}
+								onclick={eventPresenter.previousDates}
 							>
 								&lt;
 							</button>
@@ -114,13 +75,13 @@
 								type="button"
 								aria-label="Next dates"
 								class="flex h-7 w-7 items-center justify-center rounded border border-slate-200 font-bold text-slate-500 hover:bg-slate-100"
-								onclick={onNextDates}
+								onclick={eventPresenter.nextDates}
 							>
 								&gt;
 							</button>
 						</div>
 					</div>
-					<p class="mt-1 text-xs text-slate-400">{calendarLabel}</p>
+					<p class="mt-1 text-xs text-slate-400">{eventPresenter.calendarLabel}</p>
 					<p class="mt-1 text-sm text-slate-500">Click or drag to select the dates that work.</p>
 
 					<div class="mt-5 overflow-x-auto">
@@ -133,14 +94,15 @@
 								<div></div>
 							</div>
 
-							{#each weeks as week (dateKey(week[0]))}
+							{#each eventPresenter.weeks as week (dateKey(week[0]))}
 								<div class="grid grid-cols-[40px_repeat(7,1fr)_44px] items-center gap-1 py-0.5">
 									<span class="text-xs text-slate-500">{rowLabel(week)}</span>
 
 									{#each week as date (dateKey(date))}
 										{@const key = dateKey(date)}
-										{@const isSelected = selectedDates.has(key)}
-										{@const isToday = key === todayKey}
+										{@const isSelected = eventPresenter.selectedDates.has(key)}
+										{@const isToday = eventPresenter.isToday(key)}
+										{@const isPast = eventPresenter.isPast(key)}
 										{@const holiday = data.holidays[key]}
 
 										<button
@@ -148,13 +110,17 @@
 											aria-label={`${date.toLocaleDateString()}${holiday ? `: ${holiday}` : ''}`}
 											title={holiday}
 											aria-pressed={isSelected}
+											disabled={isPast}
 											class={`relative h-9 overflow-hidden rounded-md border text-sm transition ${
 												isSelected
 													? 'border-green-500 bg-green-500 text-white'
-													: 'border-slate-200 bg-white text-slate-700 hover:bg-green-50'
+													: isPast
+														? 'border-slate-200 bg-slate-100 text-slate-400'
+														: 'border-slate-200 bg-white text-slate-700 hover:bg-green-50'
 											} ${isToday ? 'font-semibold' : ''}`}
-											onpointerdown={() => onDatePointerDown(key)}
-											onpointerenter={() => onDatePointerEnter(key)}
+											class:cursor-not-allowed={isPast}
+											onpointerdown={() => eventPresenter.startDateDrag(key)}
+											onpointerenter={() => eventPresenter.dragOverDate(key)}
 										>
 											{#if holiday}
 												<span
@@ -173,12 +139,12 @@
 					</div>
 
 					<div class="mt-5 flex items-center justify-between border-t border-slate-100 pt-4">
-						<p class="text-xs text-slate-500">{selectedDates.size} dates selected</p>
+						<p class="text-xs text-slate-500">{eventPresenter.selectedDates.size} dates selected</p>
 
 						<button
 							type="button"
 							class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-							onclick={onClearDates}
+							onclick={eventPresenter.clearDates}
 						>
 							Clear
 						</button>
@@ -198,7 +164,9 @@
 							Start time
 							<select
 								name="startTime"
-								bind:value={startTime}
+								value={eventPresenter.startTime}
+								onchange={(event) =>
+									eventPresenter.setStartTime((event.currentTarget as HTMLSelectElement).value)}
 								class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
 							>
 								{#each times as time (time)}
@@ -213,7 +181,9 @@
 							End time
 							<select
 								name="endTime"
-								bind:value={endTime}
+								value={eventPresenter.endTime}
+								onchange={(event) =>
+									eventPresenter.setEndTime((event.currentTarget as HTMLSelectElement).value)}
 								class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
 							>
 								{#each times as time (time)}
@@ -222,30 +192,50 @@
 							</select>
 						</label>
 
-						<label
-							class="flex items-center justify-between gap-4 text-sm font-medium text-slate-700"
-						>
-							Time zone
-							<select
-								name="timezone"
-								bind:value={timeZone}
-								class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
-							>
-								{#each timeZones as zone (zone)}
-									<option value={zone}>{zone}</option>
-								{/each}
-							</select>
-						</label>
+						<div class="font-small flex items-center justify-between gap-4 text-sm text-slate-700">
+							<label for="timezone-selector" class="font-medium">Time zone</label>
+							<div class="relative min-w-0 flex-1">
+								<Select
+									id="timezone-selector"
+									name="timezone"
+									items={eventPresenter.timeZoneLabels}
+									value={eventPresenter.timeZone}
+									onchange={(event) => eventPresenter.setTimeZone(event.detail)}
+									valueMode="id"
+									itemId="zone"
+									label="label"
+									placeholder="Search time zones"
+									clearable={false}
+									class="w-full text-sm"
+									containerStyles="border: 1px solid #e2e8f0; border-radius: 0.5rem; background: white;"
+								/>
+							</div>
+						</div>
 					</div>
 
 					<div class="mt-8 flex items-center justify-end border-t border-slate-100 pt-4">
-						<button
-							type="submit"
-							class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-40"
-							disabled={!canCreate}
+						<div
+							role="group"
+							onmouseenter={() => eventPresenter.setCreateButtonHovered(true)}
+							onmouseleave={() => eventPresenter.setCreateButtonHovered(false)}
 						>
-							Create event
-						</button>
+							<button
+								type="submit"
+								class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-40"
+								disabled={!eventPresenter.canCreate || eventPresenter.submitting}
+							>
+								{#if eventPresenter.submitting}
+									<span
+										class="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent align-[-0.2em]"
+										role="status"
+										aria-label="Creating event"
+									></span>
+									Creating...
+								{:else}
+									Create event
+								{/if}
+							</button>
+						</div>
 					</div>
 				</section>
 			</div>

@@ -1,7 +1,17 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import fig1 from '$lib/assets/fig1.svg';
+	import profile1 from '$lib/assets/profile1.svg';
+	import profile2 from '$lib/assets/profile2.svg';
+	import profile3 from '$lib/assets/profile3.svg';
+	import profile4 from '$lib/assets/profile4.svg';
 
-	const people = ['Christoffer', 'Albin', 'Ivar', 'Hannah'];
+	const people = [
+		{ name: 'Christoffer', avatar: profile1 },
+		{ name: 'Albin', avatar: profile2 },
+		{ name: 'Ivar', avatar: profile3 },
+		{ name: 'Hannah', avatar: profile4 }
+	];
 
 	const heatmap = [0, 2, 2, 0, 0, 0, 2, 3, 2, 0, 0, 2, 3, 2, 0, 0, 2, 3, 2, 0, 0, 0, 2, 2, 0];
 
@@ -18,38 +28,42 @@
 </svelte:head>
 
 <section class="mx-auto max-w-6xl px-6 pt-20 pb-24 sm:pt-28">
-	<div class="mx-auto max-w-3xl text-center">
-		<div
-			class="mb-6 inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm text-slate-600"
-		>
-			Meeting planning for teams
+	<div class="grid items-center lg:grid-cols-[1fr_350px]">
+		<div class="max-w-3xl text-center lg:pl-8">
+			<div
+				class="mb-6 inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm text-slate-600"
+			>
+				Meeting planning for teams
+			</div>
+
+			<h1 class="text-5xl font-semibold tracking-tight sm:text-6xl">
+				Meetings without
+				<span class="text-slate-400">the back-and-forth.</span>
+			</h1>
+
+			<p class="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
+				See when your team is free, agree on a time, and keep meeting notes and documents in one
+				place.
+			</p>
+
+			<div class="mt-8 flex justify-center gap-3">
+				<a
+					href={resolve('/event')}
+					class="rounded-lg bg-slate-900 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-slate-800"
+				>
+					Get started
+				</a>
+
+				<a
+					href="#features"
+					class="rounded-lg border border-slate-200 px-5 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+				>
+					How it works
+				</a>
+			</div>
 		</div>
 
-		<h1 class="text-5xl font-semibold tracking-tight sm:text-6xl">
-			Meetings without
-			<span class="text-slate-400">the back-and-forth.</span>
-		</h1>
-
-		<p class="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-600">
-			See when your team is free, agree on a time, and keep meeting notes and documents in one
-			place.
-		</p>
-
-		<div class="mt-8 flex justify-center gap-3">
-			<a
-				href={resolve('/event')}
-				class="rounded-lg bg-slate-900 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-slate-800"
-			>
-				Get started
-			</a>
-
-			<a
-				href="#features"
-				class="rounded-lg border border-slate-200 px-5 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
-			>
-				How it works
-			</a>
-		</div>
+		<img src={fig1} alt="" class="mx-auto h-[19.2rem] w-auto sm:h-96 lg:h-[33.6rem]" />
 	</div>
 
 	<div class="mx-auto mt-20 max-w-5xl">
@@ -70,10 +84,12 @@
 					<p class="mb-4 text-xs font-medium tracking-wide text-slate-400 uppercase">Team</p>
 
 					<div class="space-y-2">
-						{#each people as person (person)}
+						{#each people as person (person.name)}
 							<div class="flex items-center gap-3 rounded-lg px-2 py-2">
-								<div class="h-7 w-7 rounded-full bg-slate-100"></div>
-								<span class="text-sm text-slate-700">{person}</span>
+								<div class="h-7 w-7 overflow-hidden rounded-full bg-slate-100">
+									<img src={person.avatar} alt="" class="h-full w-full object-cover" />
+								</div>
+								<span class="text-sm text-slate-700">{person.name}</span>
 							</div>
 						{/each}
 					</div>
