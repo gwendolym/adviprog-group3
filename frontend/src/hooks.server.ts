@@ -1,7 +1,9 @@
 import { env } from '$env/dynamic/private';
 import type { Handle } from '@sveltejs/kit';
+import { sequence } from '@sveltejs/kit/hooks';
+import { handleAppearance } from '@friendofsvelte/toggle';
 
-export const handle: Handle = async ({ event, resolve }) => {
+export const handle: Handle = sequence(handleAppearance, async ({ event, resolve }) => {
 	if (env.API_URL && event.url.pathname.startsWith('/api')) {
 		const target = new URL(event.url.pathname + event.url.search, env.API_URL);
 		const headers = new Headers(event.request.headers);
@@ -17,4 +19,4 @@ export const handle: Handle = async ({ event, resolve }) => {
 	}
 
 	return resolve(event);
-};
+});

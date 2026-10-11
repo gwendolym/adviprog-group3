@@ -124,13 +124,15 @@ export function createAvailabilityPresenter(eventId: string) {
 			return Object.values(participants).filter((cells) => cells.includes(key)).length;
 		},
 		availabilityClass(count: number) {
-			if (count === 0) return 'bg-red-100 text-red-300';
+			if (count === 0) return 'bg-red-100 text-red-300 dark:bg-red-950/60 dark:text-red-300';
 
 			const ratio = count / participantCount;
-			if (ratio <= 0.25) return 'bg-green-200 text-green-900';
-			if (ratio <= 0.5) return 'bg-green-400 text-green-950';
-			if (ratio <= 0.75) return 'bg-green-600 text-white';
-			return 'bg-green-800 text-white';
+			if (ratio <= 0.25)
+				return 'bg-green-200 text-green-900 dark:bg-green-900/60 dark:text-green-200';
+			if (ratio <= 0.5)
+				return 'bg-green-400 text-green-950 dark:bg-green-700/80 dark:text-green-100';
+			if (ratio <= 0.75) return 'bg-green-600 text-white dark:bg-green-600';
+			return 'bg-green-800 text-white dark:bg-green-800';
 		},
 		isAvailableOnHoveredCell(name: string) {
 			return hoveredAvailability !== null && participants[name]?.includes(hoveredAvailability);
