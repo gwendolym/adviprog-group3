@@ -74,7 +74,7 @@
 		<img
 			src={fig1}
 			alt=""
-			class="mx-auto h-[19.2rem] w-auto sm:h-96 lg:h-[33.6rem] dark:hue-rotate-180 dark:invert"
+			class="mx-auto hidden h-[19.2rem] w-auto sm:h-96 lg:block lg:h-[33.6rem] dark:hue-rotate-180 dark:invert"
 		/>
 	</div>
 
