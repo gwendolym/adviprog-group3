@@ -9,6 +9,14 @@ repos:
         pass_filenames: false
         stages: [pre-commit]
 
+      - id: frontend-typecheck
+        name: Frontend type checking
+        entry: sh -c 'cd frontend && npm run check'
+        language: system
+        files: ^frontend/
+        pass_filenames: false
+        stages: [pre-commit]
+
       - id: frontend-test
         name: Frontend tests
         entry: sh -c 'cd frontend && npm run test'
@@ -25,9 +33,25 @@ repos:
         pass_filenames: false
         stages: [pre-commit]
 
+      - id: backend-typecheck
+        name: Backend type checking
+        entry: sh -c 'cd backend && npx tsc --noEmit'
+        language: system
+        files: ^backend/
+        pass_filenames: false
+        stages: [pre-commit]
+
       - id: backend-test
         name: Backend tests
         entry: sh -c 'cd backend && npm run test'
+        language: system
+        files: ^backend/
+        pass_filenames: false
+        stages: [pre-commit]
+
+      - id: backend-test-e2e
+        name: Backend E2E tests
+        entry: sh -c 'cd backend && npm run test:e2e'
         language: system
         files: ^backend/
         pass_filenames: false

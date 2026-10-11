@@ -5,6 +5,15 @@
 	import { ThemeToggle } from '@friendofsvelte/toggle';
 	import '@friendofsvelte/toggle/styles/Toggle.css';
 	let { children } = $props(); // Svelte updates route props through this binding.
+
+	function smoothScroll(event: MouseEvent) {
+		event.preventDefault();
+		if (window.location.pathname !== '/') {
+			window.location.href = '/#features';
+		} else {
+			document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
+		}
+	}
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
@@ -24,7 +33,8 @@
 				<!-- eslint-disable svelte/no-navigation-without-resolve -->
 				<a
 					href="/#features"
-					class="hidden rounded text-sm text-slate-600 hover:text-slate-900 focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:outline-none sm:block dark:text-slate-400 dark:hover:text-slate-100 dark:focus-visible:ring-slate-500"
+					onclick={smoothScroll}
+					class="rounded-lg px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:outline-none dark:text-slate-200 dark:hover:bg-slate-800 dark:focus-visible:ring-slate-500"
 				>
 					Features
 				</a>

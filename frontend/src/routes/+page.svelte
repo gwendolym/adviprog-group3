@@ -21,6 +21,11 @@
 		if (level === 1) return 'bg-green-200 dark:bg-green-900/50';
 		return 'bg-red-100 dark:bg-red-950/40';
 	}
+
+	function smoothScroll(event: MouseEvent) {
+		event.preventDefault();
+		document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
+	}
 </script>
 
 <svelte:head>
@@ -58,6 +63,7 @@
 
 				<a
 					href="#features"
+					onclick={smoothScroll}
 					class="rounded-lg border border-slate-200 px-5 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800"
 				>
 					How it works

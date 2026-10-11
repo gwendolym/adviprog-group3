@@ -1,17 +1,12 @@
 @import 'tailwindcss';
-
-/* `dark:` follows the .dark class that @friendofsvelte/toggle puts on <html> */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Native controls, scrollbars and autofill follow the theme */
 :root {
 	color-scheme: light;
 }
 
 :root.dark {
 	color-scheme: dark;
-
-	/* svelte-select theme (slate palette) */
 	--background: #0f172a;
 	--list-background: #1e293b;
 	--border: 1px solid #334155;
