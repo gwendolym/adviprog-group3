@@ -35,6 +35,8 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    env:
+      APP_URL: http://localhost:5173
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
