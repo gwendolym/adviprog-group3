@@ -1,3 +1,12 @@
+FROM node:22-alpine AS development
+WORKDIR /app
+RUN npm install -g npm@11
+COPY package*.json ./
+RUN npm ci
+COPY . .
+ENV NODE_ENV=development
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+
 FROM node:22-alpine AS builder
 WORKDIR /app
 RUN npm install -g npm@11
@@ -7,7 +16,7 @@ COPY . .
 RUN npm run build
 RUN npm prune --production
 
-FROM node:22-alpine
+FROM node:22-alpine AS production
 WORKDIR /app
 USER node
 COPY --from=builder --chown=node:node /app/build build/

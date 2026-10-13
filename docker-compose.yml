@@ -3,6 +3,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      target: production
     container_name: iprog-frontend
     env_file: .env
     environment:
@@ -16,11 +17,30 @@ services:
     depends_on:
       - backend
 
+  frontend-dev:
+    profiles: [dev]
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development
+    container_name: iprog-frontend-dev
+    env_file: .env
+    environment:
+      API_URL: http://backend-dev:${BACKEND_PORT}
+    ports:
+      - "${FRONTEND_DEV_PORT:-5174}:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm run dev -- --host 0.0.0.0 --port 5173
+    depends_on:
+      - backend-dev
+
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-      target: development
+      target: production
     container_name: iprog-backend
     env_file: .env
     environment:
@@ -28,6 +48,22 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public
     ports:
       - "${BACKEND_PORT}:${BACKEND_PORT}"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  backend-dev:
+    profiles: [dev]
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: iprog-backend-dev
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public
+    ports:
+      - "${BACKEND_DEV_PORT:-8081}:${BACKEND_PORT}"
     volumes:
       - ./backend:/backend
       - /backend/node_modules
