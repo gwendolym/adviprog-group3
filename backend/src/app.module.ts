@@ -1,7 +1,5 @@
 import { FileTemplateEngine, LogMailTransport, MailModule, SmtpTransport } from '@nestjs/mail';
 import { join } from 'node:path';
-import { FileTemplateEngine, LogMailTransport, MailModule, SmtpTransport } from '@nestjs/mail';
-import { join } from 'node:path';
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
@@ -29,6 +27,7 @@ import { AuthModule } from './auth/auth.module.js';
         session: {
           absoluteTtl: '14d',
           idleTtl: '3d',
+          trustedOrigins: process.env.APP_URL ? [process.env.APP_URL] : [],
         },
         emailVerification: { url: `${process.env.APP_URL}/verify-email` },
         passwordReset: { url: `${process.env.APP_URL}/reset-password` },

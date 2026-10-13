@@ -11,7 +11,7 @@ const children = createRawSnippet(() => ({
 
 describe('Layout.svelte', () => {
 	it('shows the DH2643 course in the footer', async () => {
-		render(Layout, { children });
+		render(Layout, { children, data: { user: null } });
 
 		await expect.element(page.getByText('DH2642')).not.toBeInTheDocument();
 		await expect.element(page.getByText('DH2643')).toBeInTheDocument(); // Make sure its the right course code

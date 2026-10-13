@@ -1,10 +1,16 @@
 <script lang="ts">
+	import { goto, invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import favicon from '$lib/assets/calendar-date-range.svg';
 	import './layout.css';
 	import { ThemeToggle } from '@friendofsvelte/toggle';
 	import '@friendofsvelte/toggle/styles/Toggle.css';
-	let { children } = $props(); // Svelte updates route props through this binding.
+	import type { Snippet } from 'svelte';
+	import type { LayoutData } from './$types';
+
+	let { children, data }: { children: Snippet; data: LayoutData } = $props();
+
+	let signingOut = $state(false);
 
 	function smoothScroll(event: MouseEvent) {
 		event.preventDefault();
@@ -13,6 +19,14 @@
 		} else {
 			document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
 		}
+	}
+
+	async function signOut() {
+		signingOut = true;
+		await fetch('/api/auth/sign-out', { method: 'POST' });
+		await invalidateAll();
+		signingOut = false;
+		await goto(resolve('/'));
 	}
 </script>
 
@@ -29,7 +43,7 @@
 			</a>
 
 			<div class="flex items-center gap-6">
-				<!-- Links with a hash or to routes that don't exist yet (/login) can't go through resolve() -->
+				<!-- Links with a hash can't go through resolve() -->
 				<!-- eslint-disable svelte/no-navigation-without-resolve -->
 				<a
 					href="/#features"
@@ -38,14 +52,25 @@
 				>
 					Features
 				</a>
-
-				<a
-					href="/login"
-					class="rounded-lg px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:outline-none dark:text-slate-200 dark:hover:bg-slate-800 dark:focus-visible:ring-slate-500"
-				>
-					Log in
-				</a>
 				<!-- eslint-enable svelte/no-navigation-without-resolve -->
+
+				{#if data.user}
+					<button
+						type="button"
+						onclick={signOut}
+						disabled={signingOut}
+						class="rounded-lg px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60 dark:text-slate-200 dark:hover:bg-slate-800"
+					>
+						Sign out
+					</button>
+				{:else}
+					<a
+						href={resolve('/login')}
+						class="rounded-lg px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:outline-none dark:text-slate-200 dark:hover:bg-slate-800 dark:focus-visible:ring-slate-500"
+					>
+						Log in
+					</a>
+				{/if}
 
 				<a
 					href={resolve('/event')}

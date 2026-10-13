@@ -32,4 +32,10 @@ export class AuthController {
     const { session } = await this.signInService.signIn(String(user.id), { method: 'password' });
     return { mfaRequired: session.mfa === 'pending' };
   }
+
+  @Post('sign-out')
+  @HttpCode(204)
+  async signOut() {
+    await this.signInService.signOut();
+  }
 }
