@@ -10,7 +10,7 @@ import { WebsocketGateway } from './websocket/websocket.gateway.js';
 import { AuthenticationModule, WsAuthenticator } from '@nestjs/authentication';
 import { AuthModule } from './auth/auth.module.js';
 
-const appUrl = process.env.APP_URL ?? 'http://localhost:5173';
+const appUrl = process.env.APP_URL ?? process.env.ORIGIN ?? 'http://localhost:5173';
 
 @Module({
   imports: [
