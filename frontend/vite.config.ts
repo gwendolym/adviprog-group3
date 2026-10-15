@@ -42,8 +42,11 @@ export default defineConfig({
 		port: Number(env.FRONTEND_PORT),
 		strictPort: true,
 		proxy: {
-			'/api': `http://localhost:${env.BACKEND_PORT}`,
-			'/sockets': { target: `http://localhost:${env.BACKEND_PORT}`, ws: true }
+			'/api': process.env.API_URL ?? `http://localhost:${env.BACKEND_PORT}`,
+			'/sockets': {
+				target: process.env.API_URL ?? `http://localhost:${env.BACKEND_PORT}`,
+				ws: true
+			}
 		}
 	}
 });

@@ -14,6 +14,9 @@ function isEnglish(entry: { language: string; text: string }) {
 
 // TODO: Implement user nationality detection and use that to fetch holidays for the user's country instead of hardcoding Sweden.
 export const load: PageServerLoad = async function load({ fetch }) {
+	const userResponse = await fetch('/api/me');
+	if (!userResponse.ok) redirect(303, '/login');
+
 	const year = new Date().getFullYear();
 	const holidays: Record<string, string> = {};
 

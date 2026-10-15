@@ -13,11 +13,20 @@ datasource db {
 }
 
 model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
+  id            Int     @id @default(autoincrement())
+  email         String  @unique
+  name          String?
+  roles         Roles[]
+  passwordHash  String?
+  emailVerified Boolean @default(false)
 
   teams TeamMember[] // User can be associated with multiple TeamMember records.
+  participants Participant[]
+}
+
+enum Roles {
+  MEMBER
+  ADMIN
 }
 
 model Team {
@@ -55,7 +64,9 @@ model Participant {
   name         String
   availability String[]
   eventId      String
+  userId       Int?
   event        Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user         User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([eventId, name])
 }

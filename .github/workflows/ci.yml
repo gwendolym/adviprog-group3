@@ -35,6 +35,8 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    env:
+      APP_URL: http://localhost:5173
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -46,5 +48,6 @@ jobs:
       - run: npm ci
       - run: npx prisma generate --config prisma7.config.ts
       - run: npm run lint
+      - run: npx tsc --noEmit
       - run: npm test
       - run: npm run test:e2e

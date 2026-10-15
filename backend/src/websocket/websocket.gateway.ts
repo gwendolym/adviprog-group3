@@ -3,22 +3,34 @@ import {
 	WebSocketServer,
 	SubscribeMessage,
 	MessageBody,
-	ConnectedSocket
+	ConnectedSocket,
+	OnGatewayConnection
 } from '@nestjs/websockets';
+import { WsAuthenticator } from '@nestjs/authentication';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { Server, Socket } from 'socket.io';
 
 @WebSocketGateway({
 	path: '/sockets',
 	cors: {
-		origin: true
+		origin: true,
+		credentials: true
 	}
 })
-export class WebsocketGateway {
-	constructor(private readonly prisma: PrismaService) { }
+export class WebsocketGateway implements OnGatewayConnection {
+	constructor(
+		private readonly prisma: PrismaService,
+		private readonly wsAuth: WsAuthenticator
+	) { }
 
 	@WebSocketServer()
 	server: Server;
+
+	async handleConnection(client: Socket) {
+		const result = await this.wsAuth.authenticateConnection(client, undefined, { required: true });
+		const user = result?.user as { id: number } | undefined;
+		if (user) client.data.userId = user.id;
+	}
 
 	@SubscribeMessage('watch')
 	async onWatch(
@@ -32,6 +44,8 @@ export class WebsocketGateway {
 			client.data.eventId = eventId;
 			await client.join(eventId);
 			client.emit('participants', await this.getParticipants(eventId));
+			const own = await this.prisma.participant.findFirst({ where: { eventId, userId: client.data.userId } });
+			client.emit('availability', own?.availability ?? []);
 		} catch {
 			client.emit('error', 'Unable to load event');
 		}
@@ -39,26 +53,20 @@ export class WebsocketGateway {
 
 	@SubscribeMessage('join')
 	async onJoin(
-		@MessageBody() payload: { name: string; availability: string[] },
+		@MessageBody() payload: { availability: string[] },
 		@ConnectedSocket() client: Socket
 	) {
-		const { eventId } = client.data;
+		const { eventId, userId } = client.data;
 		if (
 			!eventId ||
+			!userId ||
 			!payload ||
-			typeof payload.name !== 'string' ||
-			!payload.name.trim() ||
 			!Array.isArray(payload.availability) ||
 			!payload.availability.every((cell) => this.isValidCell(cell))
 		)
 			return;
 		try {
-			client.data.name = payload.name.trim();
-			await this.prisma.participant.upsert({
-				where: { eventId_name: { eventId, name: client.data.name } },
-				create: { eventId, name: client.data.name, availability: payload.availability },
-				update: { availability: payload.availability }
-			});
+			await this.saveAvailability(eventId, userId, payload.availability);
 			await this.broadcastParticipants(eventId);
 		} catch {
 			client.emit('error', 'Unable to save availability');
@@ -67,29 +75,57 @@ export class WebsocketGateway {
 
 	@SubscribeMessage('update')
 	async onUpdate(@MessageBody() cells: string[], @ConnectedSocket() client: Socket) {
-		const { eventId, name } = client.data;
+		const { eventId, userId } = client.data;
 		if (
 			!eventId ||
-			!name ||
+			!userId ||
 			!Array.isArray(cells) ||
 			!cells.every((cell) => this.isValidCell(cell))
 		)
 			return;
 		try {
-			await this.prisma.participant.upsert({
-				where: { eventId_name: { eventId, name } },
-				create: { eventId, name, availability: cells },
-				update: { availability: cells }
-			});
+			await this.saveAvailability(eventId, userId, cells);
 			await this.broadcastParticipants(eventId);
 		} catch {
 			client.emit('error', 'Unable to save availability');
 		}
 	}
 
+	@SubscribeMessage('leave')
+	async onLeave(@ConnectedSocket() client: Socket) {
+		const { eventId, userId } = client.data;
+		if (!eventId || !userId) return;
+
+		try {
+			await this.prisma.participant.deleteMany({ where: { eventId, userId } });
+			await this.broadcastParticipants(eventId);
+		} catch {
+			client.emit('error', 'Unable to remove availability');
+		}
+	}
+
 	private async getParticipants(eventId: string): Promise<Record<string, string[]>> {
-		const rows = await this.prisma.participant.findMany({ where: { eventId } });
-		return Object.fromEntries(rows.map(({ name, availability }) => [name, availability]));
+		const rows = await this.prisma.participant.findMany({
+			where: { eventId },
+			include: { user: { select: { email: true } } }
+		});
+		return Object.fromEntries(
+			rows.map(({ name, availability, user }) => [user?.email ?? name, availability])
+		);
+	}
+
+	private async saveAvailability(eventId: string, userId: number, availability: string[]) {
+		const user = await this.prisma.user.findUnique({ where: { id: userId } });
+		if (!user) return;
+
+		const existing = await this.prisma.participant.findFirst({ where: { eventId, userId } });
+		if (existing) {
+			await this.prisma.participant.update({ where: { id: existing.id }, data: { availability } });
+		} else {
+			await this.prisma.participant.create({
+				data: { eventId, userId, name: user.email, availability }
+			});
+		}
 	}
 
 	private async broadcastParticipants(eventId: string) {

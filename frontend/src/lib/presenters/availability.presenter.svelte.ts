@@ -3,7 +3,6 @@ import { cellKey, type Day } from '$lib/availability';
 import { createAvailabilitySocket, type Participants } from '$lib/persistence/availability.socket';
 
 export function createAvailabilityPresenter(eventId: string) {
-	let participantName = $state(''); // Reactive form state must be mutable.
 	const selectedCells = new SvelteSet<string>();
 	let copied = $state(false); // Reactive feedback state must be mutable.
 	let joined = $state(false); // Reactive connection state must be mutable.
@@ -14,7 +13,6 @@ export function createAvailabilityPresenter(eventId: string) {
 	let availabilityHovered = $state(false); // Reactive hover state must be mutable.
 	let socket: ReturnType<typeof createAvailabilitySocket> | undefined; // Socket is assigned during mount.
 
-	const canJoin = $derived(participantName.trim().length > 0);
 	const participantCount = $derived(Object.keys(participants).length);
 
 	$effect(function syncAvailability() {
@@ -34,9 +32,16 @@ export function createAvailabilityPresenter(eventId: string) {
 		participants = all;
 	}
 
+	function onAvailability(cells: string[]) {
+		selectedCells.clear();
+		for (const cell of cells) selectedCells.add(cell);
+	}
+
 	function onSocketConnect() {
 		socket?.watch(eventId);
-		if (joined) socket?.update([...selectedCells]);
+		if (joined) {
+			socket?.join({ availability: [...selectedCells] });
+		}
 	}
 
 	function applyDragMode(key: string) {
@@ -46,9 +51,6 @@ export function createAvailabilityPresenter(eventId: string) {
 	}
 
 	return {
-		get participantName() {
-			return participantName;
-		},
 		get selectedCells() {
 			return selectedCells;
 		},
@@ -67,23 +69,18 @@ export function createAvailabilityPresenter(eventId: string) {
 		get availabilityHovered() {
 			return availabilityHovered;
 		},
-		get canJoin() {
-			return canJoin;
-		},
 		get participantCount() {
 			return participantCount;
 		},
 		initialize() {
 			socket = createAvailabilitySocket();
 			socket.onParticipants(onParticipants);
+			socket.onAvailability(onAvailability);
 			socket.onConnect(onSocketConnect);
 
 			return function disconnect() {
 				socket?.disconnect();
 			};
-		},
-		setParticipantName(name: string) {
-			participantName = name;
 		},
 		startCellDrag(event: PointerEvent) {
 			const key = (event.currentTarget as HTMLElement).dataset.key;
@@ -102,15 +99,14 @@ export function createAvailabilityPresenter(eventId: string) {
 		},
 		join() {
 			if (joined) {
+				socket?.leave();
 				joined = false;
+				selectedCells.clear();
 				return;
 			}
 
-			socket?.join({
-				name: participantName.trim(),
-				availability: [...selectedCells]
-			});
 			joined = true;
+			socket?.join({ availability: [...selectedCells] });
 		},
 		copyLink() {
 			navigator.clipboard.writeText(window.location.href);
