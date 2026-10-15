@@ -4,7 +4,10 @@ import { sequence } from '@sveltejs/kit/hooks';
 import { handleAppearance } from '@friendofsvelte/toggle';
 
 export const handle: Handle = sequence(handleAppearance, async ({ event, resolve }) => {
-	if (env.API_URL && event.url.pathname.startsWith('/api')) {
+	if (
+		env.API_URL &&
+		(event.url.pathname.startsWith('/api') || event.url.pathname.startsWith('/sockets'))
+	) {
 		const target = new URL(event.url.pathname + event.url.search, env.API_URL);
 		const headers = new Headers(event.request.headers);
 		headers.delete('host');

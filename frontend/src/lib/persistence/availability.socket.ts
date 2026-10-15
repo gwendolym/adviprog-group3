@@ -1,5 +1,4 @@
 import { io, type Socket } from 'socket.io-client';
-import { env } from '$env/dynamic/public';
 
 export type Participants = Record<string, string[]>;
 
@@ -17,9 +16,10 @@ type AvailabilitySocket = Socket<
 >;
 
 export function createAvailabilitySocket() {
-	const socket: AvailabilitySocket = io(env.PUBLIC_API_URL || undefined, {
+	const socket: AvailabilitySocket = io({
 		path: '/sockets',
-		withCredentials: true
+		withCredentials: true,
+		transports: ['polling']
 	});
 
 	return {
