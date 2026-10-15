@@ -3,8 +3,12 @@ import { WebsocketGateway } from './websocket.gateway.js';
 describe('WebsocketGateway', () => {
 	const participants = {
 		findMany: vi.fn(),
-		upsert: vi.fn()
+		findFirst: vi.fn(),
+		create: vi.fn(),
+		update: vi.fn(),
+		deleteMany: vi.fn()
 	};
+	const users = { findUnique: vi.fn() };
 	const event = { findUnique: vi.fn() };
 	const server = { to: vi.fn() };
 	const room = { emit: vi.fn() };
@@ -21,7 +25,10 @@ describe('WebsocketGateway', () => {
 		vi.clearAllMocks();
 		event.findUnique.mockResolvedValue({ id: eventId });
 		server.to.mockReturnValue(room);
-		gateway = new WebsocketGateway({ event, participant: participants } as never);
+		gateway = new WebsocketGateway(
+			{ event, participant: participants, user: users } as never,
+			{ authenticateConnection: vi.fn() } as never
+		);
 		gateway.server = server as never;
 	});
 
@@ -31,14 +38,14 @@ describe('WebsocketGateway', () => {
 		const join = vi.fn();
 		const client = { data: {}, join, emit } as never;
 		participants.findMany.mockResolvedValue([
-			{ name: participantName, availability: ['2026-10-02 09:00'] }
+			{ name: participantName, availability: ['2026-10-02 09:00'], user: { email: 'ada@example.com' } }
 		]);
 
 		await gateway.onWatch(eventId, client);
 
 		expect(join).toHaveBeenCalledWith(eventId);
 		expect(emit).toHaveBeenCalledWith('participants', {
-			[participantName]: ['2026-10-02 09:00']
+			'ada@example.com': ['2026-10-02 09:00']
 		});
 	});
 
@@ -56,43 +63,68 @@ describe('WebsocketGateway', () => {
 
 	// Updating availability saves and broadcasts the new cells.
 	it('saves changed availability and broadcasts it to the event room', async () => {
-		const client = createClient({ eventId, name: participantName });
-		participants.upsert.mockResolvedValue({});
-		participants.findMany.mockResolvedValue([{ name: participantName, availability: cells }]);
+		const client = createClient({ eventId, userId: 1 });
+		participants.findFirst.mockResolvedValue({ id: 3 });
+		users.findUnique.mockResolvedValue({ id: 1, email: 'ada@example.com' });
+		participants.findMany.mockResolvedValue([{ name: 'ada@example.com', availability: cells, user: { email: 'ada@example.com' } }]);
 
 		await gateway.onUpdate(cells, client);
 
-		expect(participants.upsert).toHaveBeenCalledWith({
-			where: { eventId_name: { eventId, name: participantName } },
-			create: { eventId, name: participantName, availability: cells },
-			update: { availability: cells }
+		expect(participants.update).toHaveBeenCalledWith({
+			where: { id: 3 },
+			data: { availability: cells }
 		});
 		expect(server.to).toHaveBeenCalledWith(eventId);
-		expect(room.emit).toHaveBeenCalledWith('participants', { [participantName]: cells });
+		expect(room.emit).toHaveBeenCalledWith('participants', { 'ada@example.com': cells });
 	});
 
 	// Joining an event saves the participant's initial availability.
 	it('saves availability when a participant joins', async () => {
-		const client = createClient({ eventId });
-		participants.upsert.mockResolvedValue({});
-		participants.findMany.mockResolvedValue([{ name: participantName, availability: cells }]);
+		const client = createClient({ eventId, userId: 1 });
+		users.findUnique.mockResolvedValue({ id: 1, email: 'ada@example.com' });
+		participants.findFirst.mockResolvedValue(null);
+		participants.findMany.mockResolvedValue([{ name: 'ada@example.com', availability: cells, user: { email: 'ada@example.com' } }]);
 
-		await gateway.onJoin({ name: participantName, availability: cells }, client);
+		await gateway.onJoin({ availability: cells }, client);
 
-		expect(participants.upsert).toHaveBeenCalledWith({
-			where: { eventId_name: { eventId, name: participantName } },
-			create: { eventId, name: participantName, availability: cells },
-			update: { availability: cells }
+		expect(participants.create).toHaveBeenCalledWith({
+			data: { eventId, userId: 1, name: 'ada@example.com', availability: cells }
 		});
-		expect(room.emit).toHaveBeenCalledWith('participants', { [participantName]: cells });
+		expect(room.emit).toHaveBeenCalledWith('participants', { 'ada@example.com': cells });
+	});
+
+	it('allows another account to submit separate availability', async () => {
+		const client = createClient({ eventId, userId: 2 });
+		users.findUnique.mockResolvedValue({ id: 2, email: 'bea@example.com' });
+		participants.findFirst.mockResolvedValue(null);
+		participants.findMany.mockResolvedValue([]);
+
+		await gateway.onJoin({ availability: cells }, client);
+
+		expect(participants.create).toHaveBeenCalledWith({
+			data: { eventId, userId: 2, name: 'bea@example.com', availability: cells }
+		});
+	});
+
+	it('removes a participant when they leave', async () => {
+		const client = createClient({ eventId, userId: 1 });
+		participants.deleteMany.mockResolvedValue({ count: 1 });
+		participants.findMany.mockResolvedValue([]);
+
+		await gateway.onLeave(client);
+
+		expect(participants.deleteMany).toHaveBeenCalledWith({
+			where: { eventId, userId: 1 }
+		});
+		expect(room.emit).toHaveBeenCalledWith('participants', {});
 	});
 
 	it('ignores malformed availability cells', async () => {
 		const client = createClient({ eventId });
 
-		await gateway.onJoin({ name: participantName, availability: ['invalid'] }, client);
+		await gateway.onJoin({ availability: ['invalid'] }, client);
 
-		expect(participants.upsert).not.toHaveBeenCalled();
+		expect(participants.create).not.toHaveBeenCalled();
 	});
 
 	it('reports database errors to the client', async () => {

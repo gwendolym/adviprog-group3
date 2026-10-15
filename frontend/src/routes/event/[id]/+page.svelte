@@ -88,27 +88,16 @@
 				</div>
 
 				<div class="flex items-end gap-3">
-					<label
-						class="min-w-0 flex-1 text-sm font-medium text-slate-700 dark:text-slate-300"
-						for="name"
-					>
-						Your name
-						<input
-							id="name"
-							value={availability.participantName}
-							oninput={(event) =>
-								availability.setParticipantName((event.currentTarget as HTMLInputElement).value)}
-							class={`mt-2 w-full rounded-lg border px-3 py-2 text-sm outline-none focus:border-green-500 dark:bg-slate-800 dark:text-slate-100 ${!availability.joined && availability.availabilityHovered ? 'border-red-300 bg-red-50 dark:border-red-500/50 dark:bg-red-950/40' : 'border-slate-200 dark:border-slate-700'}`}
-						/>
-					</label>
+					<p class="min-w-0 flex-1 text-sm text-slate-500 dark:text-slate-400">
+						Availability is saved to your logged-in account.
+					</p>
 
 					<button
 						type="button"
 						class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 dark:focus-visible:ring-slate-500"
-						disabled={!availability.canJoin}
 						onclick={availability.join}
 					>
-						{availability.joined ? 'Logout' : 'Login'}
+						{availability.joined ? 'Remove availability' : 'Save availability'}
 					</button>
 				</div>
 

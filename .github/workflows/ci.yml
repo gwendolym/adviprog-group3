@@ -48,5 +48,6 @@ jobs:
       - run: npm ci
       - run: npx prisma generate --config prisma7.config.ts
       - run: npm run lint
+      - run: npx tsc --noEmit
       - run: npm test
       - run: npm run test:e2e

@@ -4,20 +4,30 @@ import { env } from '$env/dynamic/public';
 export type Participants = Record<string, string[]>;
 
 type AvailabilitySocket = Socket<
-	{ participants: (participants: Participants) => void },
+	{
+		participants: (participants: Participants) => void;
+		availability: (cells: string[]) => void;
+	},
 	{
 		watch: (eventId: string) => void;
-		join: (payload: { name: string; availability: string[] }) => void;
+		join: (payload: { availability: string[] }) => void;
+		leave: () => void;
 		update: (cells: string[]) => void;
 	}
 >;
 
 export function createAvailabilitySocket() {
-	const socket: AvailabilitySocket = io(env.PUBLIC_API_URL || undefined, { path: '/sockets' });
+	const socket: AvailabilitySocket = io(env.PUBLIC_API_URL || undefined, {
+		path: '/sockets',
+		withCredentials: true
+	});
 
 	return {
 		onParticipants(handler: (participants: Participants) => void) {
 			socket.on('participants', handler);
+		},
+		onAvailability(handler: (cells: string[]) => void) {
+			socket.on('availability', handler);
 		},
 		onConnect(handler: () => void) {
 			socket.on('connect', handler);
@@ -25,8 +35,11 @@ export function createAvailabilitySocket() {
 		watch(eventId: string) {
 			socket.emit('watch', eventId);
 		},
-		join(payload: { name: string; availability: string[] }) {
+		join(payload: { availability: string[] }) {
 			socket.emit('join', payload);
+		},
+		leave() {
+			socket.emit('leave');
 		},
 		update(cells: string[]) {
 			socket.emit('update', cells);
