@@ -1,9 +1,9 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ fetch, url }) => {
-	const response = await fetch('/api/me');
-	if (!response.ok) {
+export const load: PageServerLoad = async ({ parent, url }) => {
+	const { user } = await parent();
+	if (!user) {
 		redirect(303, `/login?returnTo=${encodeURIComponent(url.pathname)}`);
 	}
 };

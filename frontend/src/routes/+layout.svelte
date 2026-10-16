@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { goto, invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import favicon from '$lib/assets/calendar-date-range.svg';
 	import './layout.css';
 	import { ThemeToggle } from '@friendofsvelte/toggle';
 	import '@friendofsvelte/toggle/styles/Toggle.css';
@@ -29,8 +28,6 @@
 		await goto(resolve('/'));
 	}
 </script>
-
-<svelte:head><link rel="icon" href={favicon} /></svelte:head>
 
 <div class="min-h-screen bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100">
 	<header class="border-b border-slate-100 dark:border-slate-800">
