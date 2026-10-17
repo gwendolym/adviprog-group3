@@ -41,6 +41,9 @@ export default defineConfig({
 	server: {
 		port: Number(env.FRONTEND_PORT),
 		strictPort: true,
+		watch: {
+			usePolling: true
+		},
 		proxy: {
 			'/api': process.env.API_URL ?? `http://localhost:${env.BACKEND_PORT}`,
 			'/sockets': {
