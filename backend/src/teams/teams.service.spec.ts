@@ -9,6 +9,7 @@ describe('TeamsService', () => {
     team: {
       create: vi.fn(),
       findUnique: vi.fn(),
+      findMany: vi.fn(),
     },
     user: {
       findUnique: vi.fn(),
@@ -40,25 +41,92 @@ describe('TeamsService', () => {
     expect(service).toBeDefined();
   });
 
-  it('should create a team', async () => {
+  it('should create a team and add its creator as a member', async () => {
     const team = {
       id: 'team-1',
       name: 'Project Team',
       createdAt: new Date(),
+      members: [
+        {
+          joinedAt: new Date(),
+          user: {
+            id: 1,
+            name: 'Test User',
+            email: 'test@example.com',
+          },
+        },
+      ],
     };
 
     prismaMock.team.create.mockResolvedValue(team);
 
-    await expect(service.create('Project Team')).resolves.toEqual(team);
+    await expect(service.create('Project Team', 1)).resolves.toEqual(team);
 
     expect(prismaMock.team.create).toHaveBeenCalledWith({
       data: {
         name: 'Project Team',
+        members: {
+          create: {
+            userId: 1,
+          },
+        },
       },
       select: {
         id: true,
         name: true,
         createdAt: true,
+        members: {
+          select: {
+            joinedAt: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  });
+
+  it('should return teams belonging to a user', async () => {
+    const teams = [
+      {
+        id: 'team-1',
+        name: 'Project Team',
+        createdAt: new Date(),
+        _count: {
+          members: 2,
+        },
+      },
+    ];
+
+    prismaMock.team.findMany.mockResolvedValue(teams);
+
+    await expect(service.findAll(1)).resolves.toEqual(teams);
+
+    expect(prismaMock.team.findMany).toHaveBeenCalledWith({
+      where: {
+        members: {
+          some: {
+            userId: 1,
+          },
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        createdAt: true,
+        _count: {
+          select: {
+            members: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
       },
     });
   });
@@ -189,6 +257,18 @@ describe('TeamsService', () => {
     });
 
     await expect(service.removeMember('team-1', 1)).resolves.toBeUndefined();
+
+    expect(prismaMock.teamMember.findUnique).toHaveBeenCalledWith({
+      where: {
+        teamId_userId: {
+          teamId: 'team-1',
+          userId: 1,
+        },
+      },
+      select: {
+        teamId: true,
+      },
+    });
 
     expect(prismaMock.teamMember.delete).toHaveBeenCalledWith({
       where: {

@@ -6,28 +6,37 @@ import {
   Get,
   Param,
   Delete,
-  ParseIntPipe,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
 
+import { CurrentUser } from '@nestjs/authentication';
+import type { PublicUser } from '../users/users.repository.js';
 import { TeamsService } from './teams.service.js';
 import { CreateTeamDto } from './dto/create-team.dto.js';
-import { AddTeamMemberDto } from './dto/add-team-member.dto.js';
 
 @Controller('teams')
 export class TeamsController {
   constructor(private readonly teamsService: TeamsService) {}
 
   @Post()
-  create(@Body() createTeamDto: CreateTeamDto) {
+  create(
+    @Body() createTeamDto: CreateTeamDto,
+    @CurrentUser() user: PublicUser,
+  ) {
     if (
       typeof createTeamDto?.name !== 'string' ||
       createTeamDto.name.trim().length === 0
     ) {
       throw new BadRequestException('Team name is required');
     }
-    return this.teamsService.create(createTeamDto.name.trim());
+
+    return this.teamsService.create(createTeamDto.name.trim(), user.id);
+  }
+
+  @Get()
+  findAll(@CurrentUser() user: PublicUser) {
+    return this.teamsService.findAll(user.id);
   }
 
   @Get(':id')
@@ -35,26 +44,14 @@ export class TeamsController {
     return this.teamsService.findOne(id);
   }
 
-  @Post(':id/members')
-  addMember(
-    @Param('id') id: string,
-    @Body() addTeamMemberDto: AddTeamMemberDto,
-  ) {
-    if (
-      !Number.isInteger(addTeamMemberDto?.userId) ||
-      addTeamMemberDto.userId <= 0
-    ) {
-      throw new BadRequestException('A valid user ID is required');
-    }
-    return this.teamsService.addMember(id, addTeamMemberDto.userId);
+  @Post(':id/join')
+  join(@Param('id') id: string, @CurrentUser() user: PublicUser) {
+    return this.teamsService.addMember(id, user.id);
   }
 
-  @Delete(':teamId/members/:userId')
+  @Delete(':id/leave')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async removeMember(
-    @Param('teamId') teamId: string,
-    @Param('userId', ParseIntPipe) userId: number,
-  ) {
-    await this.teamsService.removeMember(teamId, userId);
+  async leave(@Param('id') id: string, @CurrentUser() user: PublicUser) {
+    await this.teamsService.removeMember(id, user.id);
   }
 }
