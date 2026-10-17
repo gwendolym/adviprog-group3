@@ -4,8 +4,10 @@
 	import { weekdayLabels, times, dateKey, rowLabel } from '$lib/calendar';
 	import { createEventPresenter } from '$lib/presenters/event.presenter.svelte';
 	import type { ActionData, PageData } from './$types';
+	import { format, parseISO } from 'date-fns';
+	import { resolve } from '$app/paths';
 
-	let { form, data }: { form: ActionData; data: PageData } = $props(); // Svelte updates form props.
+	let { form, data }: { form: ActionData; data: PageData } = $props();
 	const eventPresenter = createEventPresenter();
 </script>
 
@@ -255,5 +257,50 @@
 				</section>
 			</div>
 		</form>
+
+		<section class="mt-8">
+			<h2 class="mb-3 text-center font-medium text-slate-900 dark:text-slate-100">Your events</h2>
+
+			{#if data.events.length === 0}
+				<p class="text-center text-sm text-slate-500 dark:text-slate-400">
+					You haven't created any events yet.
+				</p>
+			{:else}
+				<ul class="mx-auto max-w-2xl space-y-2">
+					{#each data.events as event (event.id)}
+						{@const dates = [...event.dates].sort()}
+						{@const first = dates[0] ? format(parseISO(dates[0]), 'd MMM yyyy') : undefined}
+						{@const last =
+							dates.length > 1
+								? format(parseISO(dates[dates.length - 1]), 'd MMM yyyy')
+								: undefined}
+
+						<li>
+							<a
+								href={resolve(`/event/${event.id}`)}
+								class="flex items-center justify-between gap-4 rounded-xl border border-slate-200 bg-white px-4 py-3 transition hover:border-green-500 hover:bg-green-50 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-green-600 dark:hover:bg-slate-800"
+							>
+								<span class="min-w-0">
+									<span class="block truncate font-medium text-slate-900 dark:text-slate-100">
+										{event.name}
+									</span>
+
+									<span class="block text-xs text-slate-500 dark:text-slate-400">
+										{event.dates.length}
+										{event.dates.length === 1 ? 'date' : 'dates'}
+										{first}
+										{#if last && first !== last}
+											- {last}
+										{/if}
+									</span>
+								</span>
+
+								<span class="text-slate-400" aria-hidden="true">&rarr;</span>
+							</a>
+						</li>
+					{/each}
+				</ul>
+			{/if}
+		</section>
 	</div>
 </section>

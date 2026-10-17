@@ -15,17 +15,25 @@ export class AppService {
     return event;
   }
 
+  getEvents(creatorId: number) {
+    return this.prisma.event.findMany({
+      where: { creatorId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   async createEvent(event: {
     name: string;
     dates: string[];
     startTime: string;
     endTime: string;
     timezone: string;
-  }) {
+  }, creatorId: number) {
     return this.prisma.event.create({
       data: {
         ...event,
         dates: event.dates.map((date) => new Date(date)),
+        creatorId,
       },
     });
   }

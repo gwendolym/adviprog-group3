@@ -1,4 +1,4 @@
-import { fail, redirect } from '@sveltejs/kit';
+import { error, fail, redirect } from '@sveltejs/kit';
 import { eachDayOfInterval, format, parseISO } from 'date-fns';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -8,40 +8,71 @@ type HolidayApiItem = {
 	name: { language: string; text: string }[];
 };
 
+type Event = {
+	id: string;
+	name: string;
+	dates: string[];
+	startTime: string;
+	endTime: string;
+	timezone: string;
+};
+
 function isEnglish(entry: { language: string; text: string }) {
 	return entry.language === 'EN';
 }
 
 // TODO: Implement user nationality detection and use that to fetch holidays for the user's country instead of hardcoding Sweden.
-export const load: PageServerLoad = async function load({ fetch }) {
-	const userResponse = await fetch('/api/me');
-	if (!userResponse.ok) redirect(303, '/login');
-
-	const year = new Date().getFullYear();
+async function loadHolidays(fetch: typeof globalThis.fetch, year: number) {
 	const holidays: Record<string, string> = {};
 
 	try {
-		const response = await fetch(
-			`https://openholidaysapi.org/PublicHolidays?countryIsoCode=SE&languageIsoCode=EN&validFrom=${year}-01-01&validTo=${year + 1}-12-31`
-		);
+		const params = new URLSearchParams({
+			countryIsoCode: 'SE',
+			languageIsoCode: 'EN',
+			validFrom: `${year}-01-01`,
+			validTo: `${year + 1}-12-31`
+		});
+		const response = await fetch(`https://openholidaysapi.org/PublicHolidays?${params}`);
 
-		if (response.ok) {
-			const items: HolidayApiItem[] = await response.json();
+		if (!response.ok) return holidays;
 
-			for (const item of items) {
-				const name = item.name.find(isEnglish)?.text ?? 'Public holiday';
-				const endDate = parseISO(item.endDate);
+		const items: HolidayApiItem[] = await response.json();
 
-				for (const date of eachDayOfInterval({ start: parseISO(item.startDate), end: endDate })) {
-					holidays[format(date, 'yyyy-MM-dd')] = name;
-				}
+		for (const item of items) {
+			const name = item.name.find(isEnglish)?.text ?? 'Public holiday';
+
+			for (const date of eachDayOfInterval({
+				start: parseISO(item.startDate),
+				end: parseISO(item.endDate)
+			})) {
+				holidays[format(date, 'yyyy-MM-dd')] = name;
 			}
 		}
-	} catch (error) {
-		console.error('Failed to load Swedish public holidays', error);
+	} catch (err) {
+		console.error('Failed to load Swedish public holidays', err);
 	}
 
-	return { holidays };
+	return holidays;
+}
+
+export const load: PageServerLoad = async ({ fetch, parent }) => {
+	const { user } = await parent();
+	if (!user) redirect(303, '/login');
+
+	const year = new Date().getFullYear();
+
+	const [eventsResponse, holidays] = await Promise.all([
+		fetch('/api/events'),
+		loadHolidays(fetch, year)
+	]);
+
+	if (!eventsResponse.ok) {
+		error(500, 'Failed to load events');
+	}
+
+	const events: Event[] = await eventsResponse.json();
+
+	return { holidays, events };
 };
 
 type CreateEventInput = {
@@ -86,8 +117,8 @@ export const actions: Actions = {
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(input)
 			});
-		} catch (error) {
-			console.error('Failed to reach the events API', error);
+		} catch (err) {
+			console.error('Failed to reach the events API', err);
 			return fail(500, { error: "Couldn't create the event. Please try again." });
 		}
 

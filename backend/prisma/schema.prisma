@@ -22,6 +22,7 @@ model User {
 
   teams TeamMember[] // User can be associated with multiple TeamMember records.
   participants Participant[]
+  createdEvents Event[]
 }
 
 enum Roles {
@@ -46,7 +47,6 @@ model TeamMember {
   @@id([teamId, userId])
 }
 
-// TODO: Add a relation to the User model for the event creator
 // TODO: Add team member availability for the event
 model Event {
   id           String        @id @default(cuid())
@@ -56,6 +56,8 @@ model Event {
   endTime      String
   timezone     String
   createdAt    DateTime      @default(now())
+  creatorId    Int?
+  creator      User?         @relation(fields: [creatorId], references: [id], onDelete: SetNull)
   participants Participant[]
 }
 

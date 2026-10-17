@@ -6,8 +6,9 @@ import {
   Param,
   Post,
 } from '@nestjs/common';
-import { Public } from '@nestjs/authentication';
+import { CurrentUser, Public } from '@nestjs/authentication';
 import { AppService } from './app.service.js';
+import type { User } from './generated/prisma/client.js';
 
 interface CreateEventDto {
   name: string;
@@ -27,13 +28,21 @@ export class AppController {
     return this.appService.getHello();
   }
 
+  @Get('events')
+  getEvents(@CurrentUser() user: User) {
+    return this.appService.getEvents(user.id);
+  }
+
   @Get('events/:id')
   getEvent(@Param('id') id: string) {
     return this.appService.getEvent(id);
   }
 
   @Post('events')
-  async createEvent(@Body() event: CreateEventDto) {
+  async createEvent(
+    @Body() event: CreateEventDto,
+    @CurrentUser() user: User,
+  ) {
     if (
       typeof event?.name !== 'string' ||
       !Array.isArray(event.dates) ||
@@ -48,6 +57,6 @@ export class AppController {
       throw new BadRequestException('Invalid event data');
     }
 
-    return this.appService.createEvent(event);
+    return this.appService.createEvent(event, user.id);
   }
 }
