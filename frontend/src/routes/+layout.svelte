@@ -55,6 +55,12 @@
 				<!-- eslint-enable svelte/no-navigation-without-resolve -->
 
 				{#if data.user}
+					<a
+						href={resolve('/teams')}
+						class="rounded-lg px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:outline-none dark:text-slate-200 dark:hover:bg-slate-800 dark:focus-visible:ring-slate-500"
+					>
+						Teams
+					</a>
 					<button
 						type="button"
 						onclick={signOut}

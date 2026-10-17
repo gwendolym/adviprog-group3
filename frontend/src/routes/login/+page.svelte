@@ -1,11 +1,14 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { page } from '$app/state';
 	import type { ActionData } from './$types';
 
 	let { form }: { form: ActionData } = $props();
 
 	let mode = $state<'signin' | 'signup'>('signin');
 	let submitting = $state(false);
+
+	const returnTo = $derived(page.url.searchParams.get('returnTo') ?? '');
 
 	$effect(() => {
 		if (form?.mode) mode = form.mode;
@@ -67,6 +70,7 @@
 				};
 			}}
 		>
+			<input type="hidden" name="returnTo" value={returnTo} />
 			<div>
 				<label
 					class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300"
