@@ -8,18 +8,22 @@ import { EmailVerificationMailer } from './email-verification.mailer.js';
 import { EmailVerificationController } from './email-verification.controller.js';
 import { PasswordResetMailer } from './password-reset.mailer.js';
 import { PasswordResetController } from './password-reset.controller.js';
+import { OidcController } from './oidc.controller.js';
+import { AppOidcAccountResolver } from './oidc-account.resolver.js';
 @Module({
   imports: [UsersModule],
   controllers: [
     AuthController, 
     EmailVerificationController, 
     PasswordResetController,
+    OidcController,
   ],
   providers: [
     SessionAuth, 
     CredentialsService, 
     EmailVerificationMailer,  
     PasswordResetMailer,
+    AppOidcAccountResolver,
   ],
 })
 export class AuthModule {}
