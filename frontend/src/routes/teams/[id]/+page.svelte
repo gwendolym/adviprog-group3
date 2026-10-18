@@ -31,7 +31,7 @@
 </svelte:head>
 
 <section class="mx-auto max-w-4xl px-6 py-12">
-	<header class="flex flex-wrap items-start justify-between gap-4">
+	<header>
 		<div class="min-w-0">
 			<a
 				href={resolve('/teams')}
@@ -40,7 +40,7 @@
 				← Your teams
 			</a>
 
-			<h1 class="mt-3 break-words text-3xl font-semibold">{data.team.name}</h1>
+			<h1 class="mt-3 text-3xl font-semibold break-words">{data.team.name}</h1>
 
 			<p class="mt-2 text-slate-500">
 				{data.team.members.length}
@@ -48,7 +48,7 @@
 			</p>
 		</div>
 
-		<div class="flex flex-wrap gap-3">
+		<div class="mt-5 flex flex-wrap gap-3">
 			{#if isMember}
 				<button
 					type="button"
