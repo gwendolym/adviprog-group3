@@ -30,6 +30,9 @@ export class TeamsController {
     ) {
       throw new BadRequestException('Team name is required');
     }
+    if (createTeamDto.name.trim().length > 50) {
+      throw new BadRequestException('Team name must be at most 50 characters');
+    }
 
     return this.teamsService.create(createTeamDto.name.trim(), user.id);
   }

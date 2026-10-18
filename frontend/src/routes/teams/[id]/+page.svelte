@@ -32,7 +32,7 @@
 
 <section class="mx-auto max-w-4xl px-6 py-12">
 	<header class="flex flex-wrap items-start justify-between gap-4">
-		<div>
+		<div class="min-w-0">
 			<a
 				href={resolve('/teams')}
 				class="text-sm text-slate-500 hover:text-slate-900 dark:hover:text-white"
@@ -40,7 +40,7 @@
 				← Your teams
 			</a>
 
-			<h1 class="mt-3 text-3xl font-semibold">{data.team.name}</h1>
+			<h1 class="mt-3 break-words text-3xl font-semibold">{data.team.name}</h1>
 
 			<p class="mt-2 text-slate-500">
 				{data.team.members.length}

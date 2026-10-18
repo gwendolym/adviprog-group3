@@ -4,6 +4,7 @@
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
+	let teamName = $state('');
 </script>
 
 <svelte:head>
@@ -12,7 +13,6 @@
 
 <section class="mx-auto max-w-4xl px-6 py-12">
 	<header>
-		<p class="text-sm font-medium text-slate-500">Meetly</p>
 		<h1 class="mt-1 text-3xl font-semibold">Your teams</h1>
 		<p class="mt-2 text-slate-500">Create a team or open one of your existing teams.</p>
 	</header>
@@ -22,16 +22,33 @@
 	>
 		<h2 class="font-medium">Create a team</h2>
 
-		<form method="POST" action="?/create" use:enhance class="mt-4 flex flex-col gap-3 sm:flex-row">
-			<label class="flex-1">
+		<form
+			method="POST"
+			action="?/create"
+			use:enhance
+			class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-start"
+		>
+			<label class="w-full flex-1" for="team-name">
 				<span class="sr-only">Team name</span>
 				<input
 					name="name"
-					value={form?.name ?? ''}
+					bind:value={teamName}
 					placeholder="Team name"
 					autocomplete="off"
+					maxlength="50"
+					aria-describedby="team-name-limit"
 					class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-950"
 				/>
+				<p
+					id="team-name-limit"
+					class={`mt-1 text-right text-xs ${
+						teamName.length === 50
+							? 'text-amber-600 dark:text-amber-400'
+							: 'text-slate-500 dark:text-slate-400'
+					}`}
+				>
+					{teamName.length} / 50
+				</p>
 			</label>
 
 			<button
@@ -58,9 +75,9 @@
 					<li>
 						<a
 							href={resolve('/teams/[id]', { id: team.id })}
-							class="block rounded-xl border border-slate-200 bg-white p-5 hover:border-green-500 dark:border-slate-800 dark:bg-slate-900"
+							class="block min-w-0 rounded-xl border border-slate-200 bg-white p-5 hover:border-green-500 dark:border-slate-800 dark:bg-slate-900"
 						>
-							<h3 class="font-medium">{team.name}</h3>
+							<h3 class="font-medium break-words">{team.name}</h3>
 							<p class="mt-2 text-sm text-slate-500">
 								{team._count.members}
 								{team._count.members === 1 ? ' member' : ' members'}

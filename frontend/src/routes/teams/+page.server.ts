@@ -47,6 +47,14 @@ export const actions: Actions = {
 			});
 		}
 
+		if (name.length > 50) {
+			return fail(400, {
+				action: 'create',
+				error: 'Team name must be at most 50 characters.',
+				name
+			});
+		}
+
 		const response = await fetch('/api/teams', {
 			method: 'POST',
 			headers: {

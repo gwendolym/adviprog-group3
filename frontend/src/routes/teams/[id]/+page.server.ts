@@ -104,6 +104,6 @@ export const actions: Actions = {
 			});
 		}
 
-		redirect(303, loginUrl(params.id));
+		redirect(303, '/teams');
 	}
 };

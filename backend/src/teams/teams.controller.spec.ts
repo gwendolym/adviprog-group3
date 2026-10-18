@@ -119,4 +119,17 @@ describe('TeamsController', () => {
 
     expect(teamsServiceMock.removeMember).toHaveBeenCalledWith('team-1', 1);
   });
+
+  it('should reject a team name longer than 50 characters', () => {
+    expect(() =>
+      controller.create(
+        {
+          name: 'a'.repeat(51),
+        },
+        currentUser,
+      ),
+    ).toThrow('Team name must be at most 50 characters');
+
+    expect(teamsServiceMock.create).not.toHaveBeenCalled();
+  });
 });
