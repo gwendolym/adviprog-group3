@@ -36,9 +36,12 @@ async function errorMessage(response: Response): Promise<string> {
 	return 'Something went wrong. Please try again.';
 }
 
-function returnTo(request: Request): string {
-	const target = new URL(request.url).searchParams.get('returnTo');
-	return target?.startsWith('/event') ? target : '/event';
+function returnTo(form: FormData): string {
+	const target = form.get('returnTo')?.toString().trim();
+	if (target?.startsWith('/event') || target?.startsWith('/teams')) {
+		return target;
+	}
+	return '/event';
 }
 
 export const actions: Actions = {
@@ -71,7 +74,7 @@ export const actions: Actions = {
 		}
 
 		forwardSessionCookies(response, cookies);
-		redirect(303, returnTo(request));
+		redirect(303, returnTo(form));
 	},
 
 	signup: async ({ request, fetch, cookies }) => {
@@ -110,6 +113,6 @@ export const actions: Actions = {
 		}
 
 		forwardSessionCookies(response, cookies);
-		redirect(303, returnTo(request));
+		redirect(303, returnTo(form));
 	}
 };

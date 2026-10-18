@@ -9,15 +9,59 @@ import { PrismaService } from '../prisma/prisma.service.js';
 export class TeamsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(name: string) {
+  create(name: string, creatorId: number) {
     return this.prisma.team.create({
+      // This both creates the team and adds the creator as a member of the team
       data: {
         name: name,
+        members: {
+          create: {
+            userId: creatorId,
+          },
+        },
+      },
+      select: {
+        // What to return
+        id: true,
+        name: true,
+        createdAt: true,
+        members: {
+          select: {
+            joinedAt: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
+  async findAll(userId: number) {
+    return this.prisma.team.findMany({
+      where: {
+        members: {
+          some: {
+            userId: userId,
+          },
+        },
       },
       select: {
         id: true,
         name: true,
         createdAt: true,
+        _count: {
+          select: {
+            members: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
       },
     });
   }
@@ -54,6 +98,9 @@ export class TeamsService {
   async addMember(teamId: string, userId: number) {
     const team = await this.prisma.team.findUnique({
       where: { id: teamId },
+      select: {
+        id: true,
+      },
     });
 
     if (!team) {
@@ -62,6 +109,9 @@ export class TeamsService {
 
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
+      select: {
+        id: true,
+      },
     });
 
     if (!user) {
@@ -75,10 +125,15 @@ export class TeamsService {
           userId,
         },
       },
+      select: {
+        teamId: true,
+      },
     });
 
     if (existingMembership) {
-      throw new ConflictException(`User with ID ${userId} is already a member of team with ID ${teamId}`);
+      throw new ConflictException(
+        `User with ID ${userId} is already a member of team with ID ${teamId}`,
+      );
     }
 
     return this.prisma.teamMember.create({
@@ -106,6 +161,9 @@ export class TeamsService {
           teamId,
           userId,
         },
+      },
+      select: {
+        teamId: true,
       },
     });
 
