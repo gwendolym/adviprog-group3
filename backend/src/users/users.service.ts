@@ -5,6 +5,21 @@ import { PrismaService } from '../prisma/prisma.service.js';
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
+  getCurrentUser(id: number) {
+    return this.prisma.user.findUnique({
+      where: { id },
+      select: { id: true, email: true, holidayCountry: true },
+    });
+  }
+
+  async updateHolidayCountry(id: number, holidayCountry: string) {
+    return this.prisma.user.update({
+      where: { id },
+      data: { holidayCountry },
+      select: { id: true, email: true, name: true, holidayCountry: true },
+    });
+  }
+
   findAll() {
     return this.prisma.user.findMany({
       select: {

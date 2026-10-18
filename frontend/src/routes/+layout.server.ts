@@ -1,6 +1,6 @@
 import type { LayoutServerLoad } from './$types';
 
-type CurrentUser = { id: number; email: string };
+type CurrentUser = { id: number; email: string; holidayCountry: string | null };
 
 export const load: LayoutServerLoad = async ({ fetch }) => {
 	const response = await fetch('/api/me');

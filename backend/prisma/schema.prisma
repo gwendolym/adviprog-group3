@@ -19,6 +19,7 @@ model User {
   roles         Roles[]
   passwordHash  String?
   emailVerified Boolean @default(false)
+  holidayCountry String? @default("SE")
 
   teams TeamMember[] // User can be associated with multiple TeamMember records.
   participants Participant[]
