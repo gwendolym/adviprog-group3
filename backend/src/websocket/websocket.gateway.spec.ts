@@ -10,6 +10,10 @@ describe('WebsocketGateway', () => {
 	};
 	const users = { findUnique: vi.fn() };
 	const event = { findUnique: vi.fn() };
+	const documents = {
+		findForEvent: vi.fn(),
+		updateSection: vi.fn(),
+	};
 	const server = { to: vi.fn() };
 	const room = { emit: vi.fn() };
 	const eventId = 'event-1';
@@ -27,7 +31,8 @@ describe('WebsocketGateway', () => {
 		server.to.mockReturnValue(room);
 		gateway = new WebsocketGateway(
 			{ event, participant: participants, user: users } as never,
-			{ authenticateConnection: vi.fn() } as never
+			{ authenticateConnection: vi.fn() } as never,
+			documents as never
 		);
 		gateway.server = server as never;
 	});
@@ -135,5 +140,71 @@ describe('WebsocketGateway', () => {
 		await gateway.onWatch(eventId, client);
 
 		expect(emit).toHaveBeenCalledWith('error', 'Unable to load event');
+	});
+
+	it('sends the document to a viewer', async () => {
+		const document = { agenda: 'Plan demo', notes: '', updatedAt: null };
+		const join = vi.fn();
+		const emit = vi.fn();
+		const client = { data: { userId: 1 }, join, emit } as never;
+
+		documents.findForEvent.mockResolvedValue(document);
+
+		await gateway.onWatchDocument(eventId, client);
+
+		expect(documents.findForEvent).toHaveBeenCalledWith(eventId, 1);
+		expect(join).toHaveBeenCalledWith(`document:${eventId}`);
+		expect(emit).toHaveBeenCalledWith('meeting-document', document);
+	});
+
+	it('rejects an invalid section', async () => {
+		const emit = vi.fn();
+		const client = {
+			data: { userId: 1, documentEventId: eventId },
+			emit,
+		} as never;
+
+		await gateway.onUpdateDocumentSection(
+			{ section: 'other', content: 'Text' } as never,
+			client,
+		);
+
+		expect(documents.updateSection).not.toHaveBeenCalled();
+		expect(emit).toHaveBeenCalledWith(
+			'document-error',
+			'Invalid document update',
+		);
+	});
+	
+	it('saves an edit and sends it to other viewers', async () => {
+		const emit = vi.fn();
+		const broadcast = vi.fn();
+		const to = vi.fn().mockReturnValue({ emit: broadcast });
+		const client = {data: { userId: 1, documentEventId: eventId }, emit, to} as never;
+
+		documents.updateSection.mockResolvedValue({
+			updatedAt: new Date('2026-10-19T12:00:00.000Z'),
+		});
+
+		await gateway.onUpdateDocumentSection(
+			{ section: 'agenda', content: 'Plan demo' },
+			client,
+		);
+
+		expect(documents.updateSection).toHaveBeenCalledWith(
+			eventId,
+			1,
+			'agenda',
+			'Plan demo',
+		);
+		expect(emit).toHaveBeenCalledWith(
+			'document-saved',
+			expect.objectContaining({ section: 'agenda', content: 'Plan demo' }),
+		);
+		expect(to).toHaveBeenCalledWith(`document:${eventId}`);
+		expect(broadcast).toHaveBeenCalledWith(
+			'document-section-updated',
+			expect.objectContaining({ section: 'agenda', content: 'Plan demo' }),
+		);
 	});
 });

@@ -22,6 +22,7 @@ model User {
   holidayCountry String? @default("SE")
 
   teams         TeamMember[] // User can be associated with multiple TeamMember records.
+  updatedMeetingDocuments MeetingDocument[]
   participants  Participant[]
   createdEvents Event[]
   oauthAccounts OAuthAccount[]
@@ -73,6 +74,7 @@ model Event {
   creatorId    Int?
   creator      User?         @relation(fields: [creatorId], references: [id], onDelete: SetNull)
   participants Participant[]
+  meetingDocument MeetingDocument?
 }
 
 model Participant {
@@ -86,3 +88,16 @@ model Participant {
 
   @@unique([eventId, name])
 }
+
+model MeetingDocument {
+  id          String   @id @default(cuid())
+  eventId     String   @unique
+  agenda      String   @default("")
+  notes       String   @default("")
+  updatedAt   DateTime @updatedAt
+  updatedById Int?
+
+  event     Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  updatedBy User? @relation(fields: [updatedById], references: [id], onDelete: SetNull)
+}
+
