@@ -11,6 +11,9 @@ export const handle: Handle = sequence(handleAppearance, async ({ event, resolve
 		const target = new URL(event.url.pathname + event.url.search, env.API_URL);
 		const headers = new Headers(event.request.headers);
 		headers.delete('host');
+		if (event.url.pathname.startsWith('/sockets')) {
+			headers.set('accept-encoding', 'identity');
+		}
 
 		return fetch(target, {
 			method: event.request.method,
