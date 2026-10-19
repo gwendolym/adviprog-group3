@@ -92,7 +92,7 @@ export const actions: Actions = {
 
 		const input: CreateEventInput = {
 			name: form.get('name')?.toString().trim() ?? '',
-			dates: form.getAll('dates').map(String),
+			dates: form.getAll('dates').map(String).sort(),
 			startTime: form.get('startTime')?.toString() ?? '',
 			endTime: form.get('endTime')?.toString() ?? '',
 			timezone: form.get('timezone')?.toString() ?? ''
