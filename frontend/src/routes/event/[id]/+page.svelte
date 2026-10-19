@@ -117,7 +117,7 @@
 						</p>
 						<h2 class="mt-1 font-medium text-slate-900 dark:text-slate-100">Your availability</h2>
 						<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-							Enter your name and select the times that work for you.
+							Select the times that work for you.
 						</p>
 					</div>
 
