@@ -4,6 +4,7 @@
 	import { cellKey } from '$lib/availability';
 	import { createAvailabilityPresenter } from '$lib/presenters/availability.presenter.svelte';
 	import type { PageData } from './$types';
+	import MeetingDocument from './MeetingDocument.svelte';
 
 	let { data }: { data: PageData } = $props(); // Svelte updates route props through this binding.
 	const availability = createAvailabilityPresenter(page.params.id ?? '');
@@ -271,5 +272,6 @@
 				</div>
 			</section>
 		</div>
+		<MeetingDocument eventId={page.params.id ?? ''} />
 	</div>
 </section>
