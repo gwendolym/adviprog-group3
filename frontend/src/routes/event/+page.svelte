@@ -315,7 +315,7 @@
 
 			{#if data.events.length === 0}
 				<p class="text-center text-sm text-slate-500 dark:text-slate-400">
-					You haven't created any events yet.
+					You haven't created or participated in any events yet.
 				</p>
 			{:else}
 				<ul class="mx-auto max-w-2xl space-y-2">
@@ -335,6 +335,9 @@
 								<span class="min-w-0">
 									<span class="block truncate font-medium text-slate-900 dark:text-slate-100">
 										{event.name}
+									</span>
+									<span class="block text-xs font-medium text-green-700 dark:text-green-400">
+										{event.creatorId === data.currentUserId ? 'Created by you' : 'Participating'}
 									</span>
 
 									<span class="block text-xs text-slate-500 dark:text-slate-400">

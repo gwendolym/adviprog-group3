@@ -1,5 +1,6 @@
+import { env } from '$env/dynamic/private';
 import { fail, redirect } from '@sveltejs/kit';
-import type { Actions } from './$types';
+import type { Actions, PageServerLoad } from './$types';
 
 function forwardSessionCookies(
 	response: Response,
@@ -36,13 +37,22 @@ async function errorMessage(response: Response): Promise<string> {
 	return 'Something went wrong. Please try again.';
 }
 
-function returnTo(form: FormData): string {
-	const target = form.get('returnTo')?.toString().trim();
+function returnTo(source: FormData | URL): string {
+	const raw = source instanceof URL ? source.searchParams.get('returnTo') : source.get('returnTo');
+	const target = raw?.toString().trim();
 	if (target?.startsWith('/event') || target?.startsWith('/teams')) {
 		return target;
 	}
 	return '/event';
 }
+
+export const load: PageServerLoad = ({ url }) => ({
+	googleEnabled: Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET),
+	googleUrl: `/api/auth/oidc/google/login?redirectTo=${encodeURIComponent(returnTo(url))}`,
+	oauthError: url.searchParams.has('error')
+		? "Couldn't sign in with Google. If you already have an account, log in with your password."
+		: null
+});
 
 export const actions: Actions = {
 	signin: async ({ request, fetch, cookies }) => {

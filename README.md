@@ -7,7 +7,7 @@ A team-centered meeting planner where you can enter your availability and decide
 
 - User accounts with authentication and email flows
   - Login with email/password
-  - TODO: Login with Google OAuth2
+  - Login with Google OAuth2 (optional, set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`)
 - Teams and team membership management
   - TODO: Team management frontend
   - TODO: Connect teams with events

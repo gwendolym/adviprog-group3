@@ -35,7 +35,7 @@ repos:
 
       - id: backend-typecheck
         name: Backend type checking
-        entry: sh -c 'cd backend && npx tsc --noEmit'
+        entry: sh -c 'cd backend && npx prisma generate --config prisma7.config.ts && npx tsc --noEmit'
         language: system
         files: ^backend/
         pass_filenames: false

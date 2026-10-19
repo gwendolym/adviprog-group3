@@ -9,6 +9,7 @@ import { TeamsModule } from './teams/teams.module.js';
 import { WebsocketGateway } from './websocket/websocket.gateway.js';
 import { AuthenticationModule, WsAuthenticator } from '@nestjs/authentication';
 import { AuthModule } from './auth/auth.module.js';
+import { oidcOptions } from './auth/oidc.config.js';
 
 const appUrl = process.env.APP_URL ?? process.env.ORIGIN ?? 'http://localhost:5173';
 
@@ -34,6 +35,7 @@ const appUrl = process.env.APP_URL ?? process.env.ORIGIN ?? 'http://localhost:51
         },
         emailVerification: { url: `${appUrl}/verify-email` },
         passwordReset: { url: `${appUrl}/reset-password` },
+        oidc: oidcOptions(appUrl),
       }),
     }),
     AuthModule,
