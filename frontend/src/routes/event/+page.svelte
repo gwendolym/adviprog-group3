@@ -53,6 +53,26 @@
 				placeholder="Event name"
 				class={`mt-2 w-full max-w-md rounded-lg border px-4 py-3 text-center text-xl font-medium text-slate-900 outline-none focus:border-green-500 dark:text-slate-100 ${eventPresenter.createButtonHovered && !eventPresenter.eventName.trim() ? 'border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/30' : 'border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900'}`}
 			/>
+
+			{#if data.teams.length > 0}
+				<label
+					for="team-selector"
+					class="mt-5 block text-xs font-medium text-slate-500 dark:text-slate-400"
+				>
+					Team
+				</label>
+				<select
+					id="team-selector"
+					form="event-create"
+					name="teamId"
+					class="select-field mt-1.5 h-10 w-auto max-w-xs min-w-40 rounded-lg border border-slate-200 bg-white pr-9 pl-9 text-center text-sm text-slate-900 transition [text-align-last:center] hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-slate-600"
+				>
+					<option value="">None</option>
+					{#each data.teams as team (team.id)}
+						<option value={team.id}>{team.name}</option>
+					{/each}
+				</select>
+			{/if}
 		</div>
 
 		{#if form?.error}
@@ -320,6 +340,8 @@
 			{:else}
 				<ul class="mx-auto max-w-2xl space-y-2">
 					{#each data.events as event (event.id)}
+						{@const role =
+							event.creatorId === data.currentUserId ? 'Created by you' : 'Participating'}
 						{@const dates = [...event.dates].sort()}
 						{@const first = dates[0] ? format(parseISO(dates[0]), 'd MMM yyyy') : undefined}
 						{@const last =
@@ -337,7 +359,7 @@
 										{event.name}
 									</span>
 									<span class="block text-xs font-medium text-green-700 dark:text-green-400">
-										{event.creatorId === data.currentUserId ? 'Created by you' : 'Participating'}
+										{event.team ? `${event.team.name} · ${role}` : role}
 									</span>
 
 									<span class="block text-xs text-slate-500 dark:text-slate-400">

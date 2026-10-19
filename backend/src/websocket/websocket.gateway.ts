@@ -8,6 +8,7 @@ import {
 } from '@nestjs/websockets';
 import { WsAuthenticator } from '@nestjs/authentication';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { EventsService } from '../events/events.service.js';
 import { Server, Socket } from 'socket.io';
 import { MeetingDocumentsService } from '../meeting-documents/meeting-documents.service.js';
 import { MEETING_DOCUMENT_MAX_LENGTH, type MeetingDocumentSection, } from '../meeting-documents/meeting-document.dto.js';
@@ -23,7 +24,8 @@ export class WebsocketGateway implements OnGatewayConnection {
 	constructor(
 		private readonly prisma: PrismaService,
 		private readonly wsAuth: WsAuthenticator,
-		private readonly documents: MeetingDocumentsService
+		private readonly documents: MeetingDocumentsService,
+		private readonly events: EventsService
 	) { }
 
 	@WebSocketServer()
@@ -41,13 +43,22 @@ export class WebsocketGateway implements OnGatewayConnection {
 		@ConnectedSocket() client: Socket
 	) {
 		if (typeof eventId !== 'string') return;
+		delete client.data.eventId;
 		try {
 			const event = await this.prisma.event.findUnique({ where: { id: eventId } });
 			if (!event) return;
+			if (!client.data.userId || !(await this.events.canAccess(event, client.data.userId))) {
+				client.emit('error', "Not a member of this event's team");
+				return;
+			}
 			client.data.eventId = eventId;
+			client.data.teamId = event.teamId;
 			await client.join(eventId);
-			client.emit('participants', await this.getParticipants(eventId));
-			const own = await this.prisma.participant.findFirst({ where: { eventId, userId: client.data.userId } });
+			const [participants, own] = await Promise.all([
+				this.getParticipants(eventId, event.teamId),
+				this.prisma.participant.findFirst({ where: { eventId, userId: client.data.userId } })
+			]);
+			client.emit('participants', participants);
 			client.emit('availability', own?.availability ?? []);
 		} catch {
 			client.emit('error', 'Unable to load event');
@@ -59,7 +70,7 @@ export class WebsocketGateway implements OnGatewayConnection {
 		@MessageBody() payload: { availability: string[] },
 		@ConnectedSocket() client: Socket
 	) {
-		const { eventId, userId } = client.data;
+		const { eventId, userId, teamId } = client.data;
 		if (
 			!eventId ||
 			!userId ||
@@ -70,7 +81,7 @@ export class WebsocketGateway implements OnGatewayConnection {
 			return;
 		try {
 			await this.saveAvailability(eventId, userId, payload.availability);
-			await this.broadcastParticipants(eventId);
+			await this.broadcastParticipants(eventId, teamId ?? null);
 		} catch {
 			client.emit('error', 'Unable to save availability');
 		}
@@ -78,7 +89,7 @@ export class WebsocketGateway implements OnGatewayConnection {
 
 	@SubscribeMessage('update')
 	async onUpdate(@MessageBody() cells: string[], @ConnectedSocket() client: Socket) {
-		const { eventId, userId } = client.data;
+		const { eventId, userId, teamId } = client.data;
 		if (
 			!eventId ||
 			!userId ||
@@ -88,7 +99,7 @@ export class WebsocketGateway implements OnGatewayConnection {
 			return;
 		try {
 			await this.saveAvailability(eventId, userId, cells);
-			await this.broadcastParticipants(eventId);
+			await this.broadcastParticipants(eventId, teamId ?? null);
 		} catch {
 			client.emit('error', 'Unable to save availability');
 		}
@@ -96,24 +107,41 @@ export class WebsocketGateway implements OnGatewayConnection {
 
 	@SubscribeMessage('leave')
 	async onLeave(@ConnectedSocket() client: Socket) {
-		const { eventId, userId } = client.data;
+		const { eventId, userId, teamId } = client.data;
 		if (!eventId || !userId) return;
 
 		try {
 			await this.prisma.participant.deleteMany({ where: { eventId, userId } });
-			await this.broadcastParticipants(eventId);
+			await this.broadcastParticipants(eventId, teamId ?? null);
 		} catch {
 			client.emit('error', 'Unable to remove availability');
 		}
 	}
 
-	private async getParticipants(eventId: string): Promise<Record<string, string[]>> {
-		const rows = await this.prisma.participant.findMany({
-			where: { eventId },
-			include: { user: { select: { email: true } } }
-		});
-		return Object.fromEntries(
+	private async getParticipants(
+		eventId: string,
+		teamId: string | null
+	): Promise<Record<string, string[]>> {
+		const [rows, members] = await Promise.all([
+			this.prisma.participant.findMany({
+				where: { eventId },
+				include: { user: { select: { email: true } } }
+			}),
+			teamId
+				? this.prisma.teamMember.findMany({
+						where: { teamId },
+						include: { user: { select: { email: true } } }
+					})
+				: null
+		]);
+		const responses = Object.fromEntries(
 			rows.map(({ name, availability, user }) => [user?.email ?? name, availability])
+		);
+		if (!members) return responses;
+
+		// Team events list every current member, with no availability until they respond
+		return Object.fromEntries(
+			members.map(({ user }) => [user.email, responses[user.email] ?? []])
 		);
 	}
 
@@ -131,8 +159,8 @@ export class WebsocketGateway implements OnGatewayConnection {
 		}
 	}
 
-	private async broadcastParticipants(eventId: string) {
-		this.server.to(eventId).emit('participants', await this.getParticipants(eventId));
+	private async broadcastParticipants(eventId: string, teamId: string | null) {
+		this.server.to(eventId).emit('participants', await this.getParticipants(eventId, teamId));
 	}
 
 	private isValidCell(cell: unknown): cell is string {

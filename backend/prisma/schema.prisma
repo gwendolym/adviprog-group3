@@ -49,6 +49,7 @@ model Team {
   name      String
   createdAt DateTime     @default(now())
   members   TeamMember[] // A team can be associated with multiple TeamMember records.
+  events    Event[]
 }
 
 model TeamMember {
@@ -61,7 +62,6 @@ model TeamMember {
   @@id([teamId, userId])
 }
 
-// TODO: Add team member availability for the event
 model Event {
   id           String        @id @default(cuid())
   name         String
@@ -75,6 +75,10 @@ model Event {
   creator      User?         @relation(fields: [creatorId], references: [id], onDelete: SetNull)
   participants Participant[]
   meetingDocument MeetingDocument?
+  teamId       String?
+  team         Team?         @relation(fields: [teamId], references: [id], onDelete: Restrict)
+
+  @@index([teamId])
 }
 
 model Participant {

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
+	import { resolve } from '$app/paths';
 	import { cellKey } from '$lib/availability';
 	import { createAvailabilityPresenter } from '$lib/presenters/availability.presenter.svelte';
 	import type { PageData } from './$types';
@@ -52,7 +53,16 @@
 	<div class="mx-auto max-w-6xl">
 		<div class="mb-8 flex flex-wrap items-end justify-between gap-4">
 			<div>
-				<p class="text-sm font-medium text-slate-500 dark:text-slate-400">Meeting availability</p>
+				{#if event.team}
+					<a
+						href={resolve(`/teams/${event.team.id}`)}
+						class="text-sm font-medium text-green-700 hover:underline dark:text-green-400"
+					>
+						{event.team.name}
+					</a>
+				{:else}
+					<p class="text-sm font-medium text-slate-500 dark:text-slate-400">Meeting availability</p>
+				{/if}
 				<h1 class="mt-1 text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
 					{event.name}
 				</h1>

@@ -1,22 +1,6 @@
-import {
-  BadRequestException,
-  Body,
-  Controller,
-  Get,
-  Param,
-  Post,
-} from '@nestjs/common';
-import { CurrentUser, Public } from '@nestjs/authentication';
+import { Controller, Get } from '@nestjs/common';
+import { Public } from '@nestjs/authentication';
 import { AppService } from './app.service.js';
-import type { User } from './generated/prisma/client.js';
-
-interface CreateEventDto {
-  name: string;
-  dates: string[];
-  startTime: string;
-  endTime: string;
-  timezone: string;
-}
 
 @Controller()
 export class AppController {
@@ -26,37 +10,5 @@ export class AppController {
   @Get('hello')
   getHello(): string {
     return this.appService.getHello();
-  }
-
-  @Get('events')
-  getEvents(@CurrentUser() user: User) {
-    return this.appService.getEvents(user.id);
-  }
-
-  @Get('events/:id')
-  getEvent(@Param('id') id: string) {
-    return this.appService.getEvent(id);
-  }
-
-  @Post('events')
-  async createEvent(
-    @Body() event: CreateEventDto,
-    @CurrentUser() user: User,
-  ) {
-    if (
-      typeof event?.name !== 'string' ||
-      !Array.isArray(event.dates) ||
-      event.dates.length === 0 ||
-      event.dates.some(
-        (date) => typeof date !== 'string' || Number.isNaN(Date.parse(date)),
-      ) ||
-      typeof event.startTime !== 'string' ||
-      typeof event.endTime !== 'string' ||
-      typeof event.timezone !== 'string'
-    ) {
-      throw new BadRequestException('Invalid event data');
-    }
-
-    return this.appService.createEvent(event, user.id);
   }
 }
