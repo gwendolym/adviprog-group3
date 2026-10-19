@@ -79,7 +79,7 @@
 					href={resolve('/event')}
 					class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 focus-visible:outline-none dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200 dark:focus-visible:ring-slate-500 dark:focus-visible:ring-offset-slate-950"
 				>
-					Get started
+					{data.user ? 'Events' : 'Get started'}
 				</a>
 
 				<ThemeToggle />

@@ -5,6 +5,9 @@
 	import profile2 from '$lib/assets/profile2.svg';
 	import profile3 from '$lib/assets/profile3.svg';
 	import profile4 from '$lib/assets/profile4.svg';
+	import type { PageData } from './$types';
+
+	let { data }: { data: PageData } = $props();
 
 	const people = [
 		{ name: 'Christoffer', avatar: profile1 },
@@ -58,7 +61,7 @@
 					href={resolve('/event')}
 					class="rounded-lg bg-slate-900 px-5 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
 				>
-					Get started
+					{data.user ? 'Events' : 'Get started'}
 				</a>
 
 				<a
