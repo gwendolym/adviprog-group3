@@ -229,7 +229,7 @@
 							value={eventPresenter.startTime}
 							onchange={(event) =>
 								eventPresenter.setStartTime((event.currentTarget as HTMLSelectElement).value)}
-							class="select-field rounded-lg border border-slate-200 bg-white py-2 pr-9 pl-3 text-sm dark:border-slate-800 dark:bg-slate-800 dark:text-slate-100"
+							class="select-field rounded-lg border border-slate-200 bg-white py-2 pr-9 pl-3 text-sm transition hover:border-slate-300 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-100 dark:hover:border-slate-600"
 						>
 							{#each times as time (time)}
 								<option value={time}>{time}</option>
@@ -247,7 +247,7 @@
 							value={eventPresenter.endTime}
 							onchange={(event) =>
 								eventPresenter.setEndTime((event.currentTarget as HTMLSelectElement).value)}
-							class="select-field rounded-lg border border-slate-200 bg-white py-2 pr-9 pl-3 text-sm dark:border-slate-800 dark:bg-slate-800 dark:text-slate-100"
+							class="select-field rounded-lg border border-slate-200 bg-white py-2 pr-9 pl-3 text-sm transition hover:border-slate-300 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-100 dark:hover:border-slate-600"
 						>
 							{#each times as time (time)}
 								<option value={time}>{time}</option>
