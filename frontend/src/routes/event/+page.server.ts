@@ -15,6 +15,7 @@ type Event = {
 	startTime: string;
 	endTime: string;
 	timezone: string;
+	creatorId: number;
 };
 
 function isEnglish(entry: { language: string; text: string }) {
@@ -72,7 +73,7 @@ export const load: PageServerLoad = async ({ fetch, parent }) => {
 
 	const events: Event[] = await eventsResponse.json();
 
-	return { holidays, events };
+	return { holidays, events, currentUserId: user.id };
 };
 
 type CreateEventInput = {
@@ -91,7 +92,7 @@ export const actions: Actions = {
 
 		const input: CreateEventInput = {
 			name: form.get('name')?.toString().trim() ?? '',
-			dates: form.getAll('dates').map(String),
+			dates: form.getAll('dates').map(String).sort(),
 			startTime: form.get('startTime')?.toString() ?? '',
 			endTime: form.get('endTime')?.toString() ?? '',
 			timezone: form.get('timezone')?.toString() ?? ''

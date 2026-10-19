@@ -1,7 +1,7 @@
 import { AppService, MEET_LINKS_PER_USER } from './app.service.js';
 
 describe('AppService', () => {
-  const prisma = { event: { count: vi.fn(), create: vi.fn() } };
+  const prisma = { event: { findMany: vi.fn(), count: vi.fn(), create: vi.fn() } };
   const googleMeet = { createMeeting: vi.fn() };
   const service = new AppService(prisma as never, googleMeet as never);
   const event = { name: 'Standup', dates: ['2026-10-20'], startTime: '09:00', endTime: '10:00', timezone: 'Europe/Stockholm' };
@@ -10,6 +10,17 @@ describe('AppService', () => {
     vi.clearAllMocks();
     prisma.event.create.mockImplementation(({ data }) => data);
     googleMeet.createMeeting.mockResolvedValue('https://meet.google.com/abc-defg-hij');
+  });
+
+  it('should return events created by or participated in by the user', async () => {
+    const events = [{ id: 'event-1', name: 'Project meeting' }];
+    prisma.event.findMany.mockResolvedValue(events);
+
+    await expect(service.getEvents(1)).resolves.toEqual(events);
+    expect(prisma.event.findMany).toHaveBeenCalledWith({
+      where: { OR: [{ creatorId: 1 }, { participants: { some: { userId: 1 } } }] },
+      orderBy: { createdAt: 'desc' },
+    });
   });
 
   it('adds a Meet link while the user is under the limit', async () => {

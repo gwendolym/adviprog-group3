@@ -35,7 +35,7 @@ export function buildDays(dates: string[]): Day[] {
 		};
 	}
 
-	return dates.map(formatDay);
+	return [...dates].sort().map(formatDay);
 }
 
 export function cellKey(day: Day, time: string) {
