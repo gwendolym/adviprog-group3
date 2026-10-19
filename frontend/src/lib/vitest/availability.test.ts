@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildTimes } from '.././availability';
+import { buildDays, buildTimes } from '.././availability';
 
 describe('buildTimes', () => {
 	it('lists every hour from start to end', () => {
@@ -12,5 +12,15 @@ describe('buildTimes', () => {
 
 	it('returns one hour when start equals end', () => {
 		expect(buildTimes('09:00', '09:00')).toEqual(['09:00']);
+	});
+});
+
+describe('buildDays', () => {
+	it('sorts dates chronologically', () => {
+		expect(buildDays(['2026-11-03', '2026-10-28', '2026-11-01']).map((d) => d.date)).toEqual([
+			'Oct 28',
+			'Nov 1',
+			'Nov 3'
+		]);
 	});
 });
