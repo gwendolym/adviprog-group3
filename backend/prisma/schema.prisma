@@ -69,6 +69,7 @@ model Event {
   endTime      String
   timezone     String
   createdAt    DateTime      @default(now())
+  meetUrl      String?
   creatorId    Int?
   creator      User?         @relation(fields: [creatorId], references: [id], onDelete: SetNull)
   participants Participant[]

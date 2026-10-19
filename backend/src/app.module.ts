@@ -9,6 +9,7 @@ import { TeamsModule } from './teams/teams.module.js';
 import { WebsocketGateway } from './websocket/websocket.gateway.js';
 import { AuthenticationModule, WsAuthenticator } from '@nestjs/authentication';
 import { AuthModule } from './auth/auth.module.js';
+import { GoogleModule } from './google/google.module.js';
 import { oidcOptions } from './auth/oidc.config.js';
 
 const appUrl = process.env.APP_URL ?? process.env.ORIGIN ?? 'http://localhost:5173';
@@ -39,6 +40,7 @@ const appUrl = process.env.APP_URL ?? process.env.ORIGIN ?? 'http://localhost:51
       }),
     }),
     AuthModule,
+    GoogleModule,
   ],
   controllers: [AppController],
   providers: [AppService, WebsocketGateway, WsAuthenticator],
