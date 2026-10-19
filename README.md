@@ -9,10 +9,11 @@ A team-centered meeting planner where you can enter your availability and decide
   - Login with email/password
   - Login with Google OAuth2 (optional, set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`)
 - Teams and team membership management
-  - TODO: Team management frontend
+  - Team management frontend
   - TODO: Connect teams with events
 - Entering your own availability and viewing your team's availability
 - Live meeting member availability updates over WebSockets
+- Shared event agenda and meeting notes with live updates for event participants
 - Dark mode
 - Meeting event creation
 - Automated CI/CD pipeline
