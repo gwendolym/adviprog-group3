@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from './prisma/prisma.service.js';
+import { GoogleMeetService } from './google/google-meet.service.js';
 
 @Injectable()
 export class AppService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly googleMeet: GoogleMeetService,
+  ) {}
 
   getHello(): string {
     return 'This message is from the backend!';
@@ -34,6 +38,7 @@ export class AppService {
         ...event,
         dates: event.dates.map((date) => new Date(date)),
         creatorId,
+        meetUrl: await this.googleMeet.createMeeting(),
       },
     });
   }

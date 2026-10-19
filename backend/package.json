@@ -19,7 +19,8 @@
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",
     "test:debug": "vitest --inspect-brk --no-file-parallelism",
-    "test:e2e": "vitest run --config ./vitest.config.e2e.ts"
+    "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
+    "google:meet-token": "node --env-file=../.env scripts/google-meet-token.mjs"
   },
   "dependencies": {
     "@nestjs/authentication": "^0.0.1",

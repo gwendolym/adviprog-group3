@@ -54,13 +54,28 @@
 				</p>
 			</div>
 
-			<button
-				type="button"
-				class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
-				onclick={availability.copyLink}
-			>
-				{availability.copied ? 'Copied' : 'Copy link'}
-			</button>
+			<div class="flex flex-wrap gap-2">
+				{#if event.meetUrl}
+					<!-- eslint-disable svelte/no-navigation-without-resolve -->
+					<a
+						href={event.meetUrl}
+						target="_blank"
+						rel="noopener noreferrer"
+						class="rounded-lg bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-500"
+					>
+						Join Google Meet
+					</a>
+					<!-- eslint-enable svelte/no-navigation-without-resolve -->
+				{/if}
+
+				<button
+					type="button"
+					class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+					onclick={availability.copyLink}
+				>
+					{availability.copied ? 'Copied' : 'Copy link'}
+				</button>
+			</div>
 		</div>
 
 		<div class="grid gap-6 lg:grid-cols-2">

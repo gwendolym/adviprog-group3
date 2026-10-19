@@ -8,6 +8,7 @@ export type EventData = {
 	startTime: string;
 	endTime: string;
 	timezone: string;
+	meetUrl: string | null;
 };
 
 export const load: PageLoad = async function load({ params, fetch }) {
