@@ -15,9 +15,18 @@ export class AppService {
     return event;
   }
 
-  getEvents(creatorId: number) {
+  getEvents(userId: number) {
     return this.prisma.event.findMany({
-      where: { creatorId },
+      where: {
+        OR: [
+          { creatorId: userId },
+          {
+            participants: {
+              some: { userId: userId },
+            },
+          },
+        ],
+      },
       orderBy: { createdAt: 'desc' },
     });
   }
