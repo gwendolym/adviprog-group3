@@ -24,6 +24,24 @@ describe('EventsService', () => {
     googleMeet.createMeeting.mockResolvedValue('https://meet.google.com/abc-defg-hij');
   });
 
+  describe('getTeamEvents', () => {
+    it('lists a team\'s events, newest first, for its members', async () => {
+      const events = [{ id: 'e1', teamId: 't1' }];
+      prisma.teamMember.findUnique.mockResolvedValue({ userId: 1 });
+      prisma.event.findMany.mockResolvedValue(events);
+
+      await expect(service.getTeamEvents('t1', 1)).resolves.toBe(events);
+
+    });
+
+    it('rejects non-members with 403 without listing anything', async () => {
+      prisma.teamMember.findUnique.mockResolvedValue(null);
+
+      await expect(service.getTeamEvents('t1', 2)).rejects.toThrow(ForbiddenException);
+      expect(prisma.event.findMany).not.toHaveBeenCalled();
+    });
+  });
+
   describe('getEvent', () => {
     it('throws when the event does not exist', async () => {
       prisma.event.findUnique.mockResolvedValue(null);

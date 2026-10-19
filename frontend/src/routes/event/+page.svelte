@@ -4,9 +4,9 @@
 	import { weekdayLabels, times, dateKey, rowLabel } from '$lib/calendar';
 	import { createEventPresenter } from '$lib/presenters/event.presenter.svelte';
 	import type { ActionData, PageData } from './$types';
-	import { format, parseISO } from 'date-fns';
 	import { resolve } from '$app/paths';
 	import { holidayCountries } from '$lib/holiday-countries';
+	import { formatDateRange } from '$lib/dateRange';
 
 	let { form, data }: { form: ActionData; data: PageData } = $props();
 	const eventPresenter = createEventPresenter();
@@ -65,6 +65,7 @@
 					id="team-selector"
 					form="event-create"
 					name="teamId"
+					value={data.selectedTeamId}
 					class="select-field mt-1.5 h-10 w-auto max-w-xs min-w-40 rounded-lg border border-slate-200 bg-white pr-9 pl-9 text-center text-sm text-slate-900 transition [text-align-last:center] hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-slate-600"
 				>
 					<option value="">None</option>
@@ -342,12 +343,6 @@
 					{#each data.events as event (event.id)}
 						{@const role =
 							event.creatorId === data.currentUserId ? 'Created by you' : 'Participating'}
-						{@const dates = [...event.dates].sort()}
-						{@const first = dates[0] ? format(parseISO(dates[0]), 'd MMM yyyy') : undefined}
-						{@const last =
-							dates.length > 1
-								? format(parseISO(dates[dates.length - 1]), 'd MMM yyyy')
-								: undefined}
 
 						<li>
 							<a
@@ -365,10 +360,7 @@
 									<span class="block text-xs text-slate-500 dark:text-slate-400">
 										{event.dates.length}
 										{event.dates.length === 1 ? 'date' : 'dates'}
-										{first}
-										{#if last && first !== last}
-											- {last}
-										{/if}
+										{formatDateRange(event.dates)}
 									</span>
 								</span>
 

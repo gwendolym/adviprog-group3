@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
+	import { formatDateRange } from '$lib/dateRange';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -144,4 +145,43 @@
 			</ul>
 		{/if}
 	</section>
+
+	{#if isMember}
+		<section class="mt-10">
+			<div class="flex items-center justify-between gap-4">
+				<h2 class="text-xl font-semibold">Events</h2>
+
+				<a
+					href="{resolve('/event')}?team={data.team.id}"
+					class="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+				>
+					New event
+				</a>
+			</div>
+
+			{#if data.events.length === 0}
+				<p class="mt-4 text-slate-500">This team has no events yet.</p>
+			{:else}
+				<ul
+					class="mt-4 divide-y divide-slate-200 rounded-xl border border-slate-200 bg-white dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-900"
+				>
+					{#each data.events as event (event.id)}
+						<li>
+							<a
+								href={resolve(`/event/${event.id}`)}
+								class="flex items-center justify-between gap-4 p-4 hover:bg-slate-50 dark:hover:bg-slate-800"
+							>
+								<div class="min-w-0">
+									<p class="truncate font-medium">{event.name}</p>
+									<p class="text-sm text-slate-500">{formatDateRange(event.dates)}</p>
+								</div>
+
+								<span class="text-slate-400" aria-hidden="true">&rarr;</span>
+							</a>
+						</li>
+					{/each}
+				</ul>
+			{/if}
+		</section>
+	{/if}
 </section>

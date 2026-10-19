@@ -18,7 +18,7 @@ type Event = {
 
 const countryCodes = new Set(holidayCountries.map(({ value }) => value));
 
-export const load: PageServerLoad = async ({ fetch, parent }) => {
+export const load: PageServerLoad = async ({ fetch, parent, url }) => {
 	const { user } = await parent();
 	if (!user) redirect(303, '/login');
 	const holidayCountry = preferredHolidayCountry(user.holidayCountry);
@@ -38,7 +38,10 @@ export const load: PageServerLoad = async ({ fetch, parent }) => {
 	const events: Event[] = await eventsResponse.json();
 	// Teams are optional, okay to skip
 	const teams: EventTeam[] = teamsResponse.ok ? await teamsResponse.json() : [];
-	return { holidays, events, teams, holidayCountry, currentUserId: user.id };
+	// Preselect from ?team=<id>, only if the user is in that team
+	const requestedTeam = url.searchParams.get('team');
+	const selectedTeamId = teams.some((team) => team.id === requestedTeam) ? requestedTeam : '';
+	return { holidays, events, teams, selectedTeamId, holidayCountry, currentUserId: user.id };
 };
 
 type CreateEventInput = {

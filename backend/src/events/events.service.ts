@@ -41,6 +41,15 @@ export class EventsService {
     });
   }
 
+  async getTeamEvents(teamId: string, userId: number) {
+    await this.assertTeamMember(teamId, userId);
+
+    return this.prisma.event.findMany({
+      where: { teamId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   async getEvent(id: string, userId: number) {
     const event = await this.prisma.event.findUnique({
       where: { id },
