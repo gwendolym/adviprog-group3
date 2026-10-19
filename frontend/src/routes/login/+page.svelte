@@ -61,6 +61,7 @@
 		{/if}
 
 		{#if data.googleEnabled}
+			<!-- eslint-disable svelte/no-navigation-without-resolve -->
 			<a
 				href={data.googleUrl}
 				data-sveltekit-reload
@@ -86,6 +87,7 @@
 				</svg>
 				Continue with Google
 			</a>
+			<!-- eslint-enable svelte/no-navigation-without-resolve -->
 
 			<div class="mt-6 flex items-center gap-3 text-xs text-slate-400 dark:text-slate-500">
 				<span class="h-px flex-1 bg-slate-200 dark:bg-slate-700"></span>
