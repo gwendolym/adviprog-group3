@@ -9,6 +9,7 @@ describe('UsersService', () => {
     user: {
       findMany: vi.fn(),
       findUnique: vi.fn(),
+      update: vi.fn(),
     },
   };
 
@@ -30,6 +31,36 @@ describe('UsersService', () => {
 
   it('should be defined', () => {
     expect(usersService).toBeDefined();
+  });
+
+  it('loads the saved holiday country for the current user', async () => {
+    const user = { id: 1, email: 'test@example.com', holidayCountry: 'FR' };
+    prismaMock.user.findUnique.mockResolvedValue(user);
+
+    await expect(usersService.getCurrentUser(1)).resolves.toEqual(user);
+    expect(prismaMock.user.findUnique).toHaveBeenCalledWith({
+      where: { id: 1 },
+      select: { id: true, email: true, holidayCountry: true },
+    });
+  });
+
+  it('persists the selected holiday country on the user', async () => {
+    const updated = {
+      id: 1,
+      email: 'test@example.com',
+      name: null,
+      holidayCountry: 'NO',
+    };
+    prismaMock.user.update.mockResolvedValue(updated);
+
+    await expect(usersService.updateHolidayCountry(1, 'NO')).resolves.toEqual(
+      updated,
+    );
+    expect(prismaMock.user.update).toHaveBeenCalledWith({
+      where: { id: 1 },
+      data: { holidayCountry: 'NO' },
+      select: { id: true, email: true, name: true, holidayCountry: true },
+    });
   });
 
   it('should return all users', async () => {
