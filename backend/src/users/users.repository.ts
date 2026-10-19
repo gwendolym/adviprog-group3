@@ -55,9 +55,44 @@ export class UsersRepository {
     if (!row || row.email !== normalize(email)) {
         return false;
     }
-    row.emailVerified = true;
+    await this.prisma.user.update({ where: { id }, data: { emailVerified: true } });
     return true;
     }
+
+  async findByOAuthAccount(provider: string, subject: string): Promise<PublicUser | null> {
+    const account = await this.prisma.oAuthAccount.findUnique({
+      where: { provider_subject: { provider, subject } },
+      include: { user: true },
+    });
+    return account ? toUser(account.user) : null;
+  }
+
+  async findVerifiedByEmail(email: string): Promise<PublicUser | null> {
+    const row = await this.findRow(email);
+    return row?.emailVerified ? toUser(row) : null;
+  }
+
+  async linkOAuthAccount(userId: number, provider: string, subject: string): Promise<void> {
+    await this.prisma.oAuthAccount.create({ data: { provider, subject, userId } });
+  }
+
+  async createWithOAuthAccount(
+    email: string,
+    name: string | null,
+    provider: string,
+    subject: string,
+  ): Promise<PublicUser> {
+    const row = await this.prisma.user.create({
+      data: {
+        email: normalize(email),
+        name,
+        emailVerified: true,
+        roles: [Roles.MEMBER],
+        oauthAccounts: { create: { provider, subject } },
+      },
+    });
+    return toUser(row);
+  }
 }
 
 // As the package passes addresses to handlers: an accent typed as two code points matches the stored one.

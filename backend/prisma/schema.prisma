@@ -20,9 +20,21 @@ model User {
   passwordHash  String?
   emailVerified Boolean @default(false)
 
-  teams TeamMember[] // User can be associated with multiple TeamMember records.
-  participants Participant[]
+  teams         TeamMember[] // User can be associated with multiple TeamMember records.
+  participants  Participant[]
   createdEvents Event[]
+  oauthAccounts OAuthAccount[]
+}
+
+model OAuthAccount {
+  provider  String
+  subject   String
+  userId    Int
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, subject])
+  @@index([userId])
 }
 
 enum Roles {

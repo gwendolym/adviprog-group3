@@ -16,6 +16,7 @@ export const handle: Handle = sequence(handleAppearance, async ({ event, resolve
 			method: event.request.method,
 			headers,
 			body: event.request.body,
+			redirect: 'manual',
 			// @ts-expect-error -- required by Node's fetch when streaming a request body
 			duplex: 'half'
 		});
