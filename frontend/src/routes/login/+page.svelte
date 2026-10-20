@@ -117,7 +117,7 @@
 					id="email"
 					name="email"
 					type="email"
-					autocomplete="email"
+					autocomplete="username"
 					required
 					class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-green-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-green-500"
 				/>
