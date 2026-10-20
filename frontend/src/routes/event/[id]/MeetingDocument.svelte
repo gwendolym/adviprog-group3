@@ -1,92 +1,14 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { createMeetingDocumentSocket } from '$lib/persistence/meeting-document.socket';
+	import { createMeetingDocumentPresenter } from '$lib/presenters/meeting-document.presenter.svelte';
 
 	let { eventId, isOwner }: { eventId: string; isOwner: boolean } = $props();
-	type Status = 'loading' | 'saving' | 'saved';
-	let agenda = $state('');
-	let notes = $state('');
-	let agendaStatus = $state<Status>('loading');
-	let notesStatus = $state<Status>('loading');
-	let errorMessage = $state('');
-	let agendaTimer: ReturnType<typeof setTimeout> | undefined;
-	let notesTimer: ReturnType<typeof setTimeout> | undefined;
-	let socket: ReturnType<typeof createMeetingDocumentSocket> | undefined;
+	const presenter = createMeetingDocumentPresenter(
+		() => eventId,
+		() => isOwner
+	);
 
-	function saveAgenda(text: string) {
-		if (!isOwner) {
-			return;
-		}
-		agenda = text;
-		agendaStatus = 'saving';
-		errorMessage = '';
-
-		clearTimeout(agendaTimer);
-		agendaTimer = setTimeout(() => {
-			socket?.updateSection('agenda', text); // calls onUpdateDocumentSection
-		}, 500);
-	}
-
-	function saveNotes(text: string) {
-		notes = text;
-		notesStatus = 'saving';
-		errorMessage = '';
-
-		clearTimeout(notesTimer);
-		notesTimer = setTimeout(() => {
-			socket?.updateSection('notes', text); // calls onUpdateDocumentSection
-		}, 500);
-	}
-	// Open connection, fetch document, register responses and update.
-	onMount(() => {
-		const connection = createMeetingDocumentSocket();
-		socket = connection;
-
-		connection.onConnect(() => connection.watch(eventId));
-
-		connection.onDocument((document) => {
-			if (agendaStatus !== 'saving') {
-				agenda = document.agenda;
-				agendaStatus = 'saved';
-			}
-			if (notesStatus !== 'saving') {
-				notes = document.notes;
-				notesStatus = 'saved';
-			}
-			errorMessage = '';
-		});
-
-		connection.onSectionUpdated((update) => {
-			if (update.section === 'agenda' && agendaStatus !== 'saving') {
-				agenda = update.content;
-			}
-
-			if (update.section === 'notes' && notesStatus !== 'saving') {
-				notes = update.content;
-			}
-		});
-
-		connection.onSaved((update) => {
-			if (update.section === 'agenda' && update.content === agenda) {
-				agendaStatus = 'saved';
-			}
-
-			if (update.section === 'notes' && update.content === notes) {
-				notesStatus = 'saved';
-			}
-		});
-
-		connection.onError((message) => {
-			errorMessage = message;
-		});
-
-		return () => {
-			clearTimeout(agendaTimer);
-			clearTimeout(notesTimer);
-			connection.disconnect();
-			socket = undefined;
-		};
-	});
+	onMount(() => presenter.initialize());
 </script>
 
 <section
@@ -95,18 +17,18 @@
 	<h2 class="text-xl font-semibold">Meeting document</h2>
 	<p class="mt-1 text-sm text-slate-500">Prepare an agenda and record notes together.</p>
 
-	{#if errorMessage}
-		<p role="alert" class="mt-4 text-sm text-red-600">{errorMessage}</p>
+	{#if presenter.errorMessage}
+		<p role="alert" class="mt-4 text-sm text-red-600">{presenter.errorMessage}</p>
 	{/if}
 
 	<div class="mt-6 grid gap-6 lg:grid-cols-2">
 		<label class="block">
 			<span class="font-medium">Agenda</span>
 			<textarea
-				value={agenda}
+				value={presenter.agenda}
 				readonly={!isOwner}
-				oninput={(event) => saveAgenda(event.currentTarget.value)}
-				disabled={agendaStatus === 'loading'}
+				oninput={(event) => presenter.saveAgenda(event.currentTarget.value)}
+				disabled={presenter.agendaStatus === 'loading'}
 				maxlength="20000"
 				rows="10"
 				class="mt-2 w-full rounded-lg border border-slate-300 p-3 dark:border-slate-700 dark:bg-slate-950"
@@ -116,20 +38,20 @@
 					Only the meeting owner can edit the agenda.
 				</p>
 			{/if}
-			<span class="text-sm text-slate-500">{agendaStatus}</span>
+			<span class="text-sm text-slate-500">{presenter.agendaStatus}</span>
 		</label>
 
 		<label class="block">
 			<span class="font-medium">Notes</span>
 			<textarea
-				value={notes}
-				oninput={(event) => saveNotes(event.currentTarget.value)}
-				disabled={notesStatus === 'loading'}
+				value={presenter.notes}
+				oninput={(event) => presenter.saveNotes(event.currentTarget.value)}
+				disabled={presenter.notesStatus === 'loading'}
 				maxlength="20000"
 				rows="10"
 				class="mt-2 w-full rounded-lg border border-slate-300 p-3 dark:border-slate-700 dark:bg-slate-950"
 			></textarea>
-			<span class="text-sm text-slate-500">{notesStatus}</span>
+			<span class="text-sm text-slate-500">{presenter.notesStatus}</span>
 		</label>
 	</div>
 </section>
