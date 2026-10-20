@@ -188,7 +188,11 @@ describe('login page', () => {
 				})
 			);
 
-			const { result } = await run('signup', { email: 'a@b', password: 'thisismyrealpassword1' }, fetch);
+			const { result } = await run(
+				'signup',
+				{ email: 'a@b', password: 'thisismyrealpassword1' },
+				fetch
+			);
 
 			expect(result).toMatchObject({ data: { error: 'email must be an email, too long' } });
 		});
