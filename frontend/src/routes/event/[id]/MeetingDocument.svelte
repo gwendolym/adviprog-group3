@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { createMeetingDocumentSocket } from '$lib/persistence/meeting-document.socket';
 
-	let { eventId }: { eventId: string } = $props();
+	let { eventId, isOwner }: { eventId: string; isOwner: boolean } = $props();
 	type Status = 'loading' | 'saving' | 'saved';
 	let agenda = $state('');
 	let notes = $state('');
@@ -14,6 +14,9 @@
 	let socket: ReturnType<typeof createMeetingDocumentSocket> | undefined;
 
 	function saveAgenda(text: string) {
+		if (!isOwner) {
+			return;
+		}
 		agenda = text;
 		agendaStatus = 'saving';
 		errorMessage = '';
@@ -101,12 +104,18 @@
 			<span class="font-medium">Agenda</span>
 			<textarea
 				value={agenda}
+				readonly={!isOwner}
 				oninput={(event) => saveAgenda(event.currentTarget.value)}
 				disabled={agendaStatus === 'loading'}
 				maxlength="20000"
 				rows="10"
 				class="mt-2 w-full rounded-lg border border-slate-300 p-3 dark:border-slate-700 dark:bg-slate-950"
 			></textarea>
+			{#if !isOwner}
+				<p class="text-sm text-slate-500 dark:text-slate-400">
+					Only the meeting owner can edit the agenda.
+				</p>
+			{/if}
 			<span class="text-sm text-slate-500">{agendaStatus}</span>
 		</label>
 

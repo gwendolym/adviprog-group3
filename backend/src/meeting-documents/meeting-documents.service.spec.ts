@@ -15,7 +15,7 @@ describe('MeetingDocumentsService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    prisma.event.findFirst.mockResolvedValue({ id: 'event-1' });
+    prisma.event.findFirst.mockResolvedValue({ id: 'event-1', creatorId: 1 });
   });
 
   it('returns empty sections before a document is saved', async () => {
@@ -69,5 +69,18 @@ describe('MeetingDocumentsService', () => {
     );
 
     expect(prisma.meetingDocument.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('does not let a participant edit the agenda', async () => {
+    prisma.event.findFirst.mockResolvedValue({
+      id: 'event-1',
+      creatorId: 1,
+    });
+
+    await expect(
+      service.updateSection('event-1', 2, 'agenda', 'Changed agenda'),
+    ).rejects.toThrow('Only the event owner can edit the agenda');
+
+    expect(prisma.meetingDocument.upsert).not.toHaveBeenCalled();
   });
 });

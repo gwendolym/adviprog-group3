@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { MeetingDocumentSection } from './meeting-document.dto.js';
 
@@ -34,8 +34,12 @@ export class MeetingDocumentsService {
     content: string,
   ) {
 
-    // make sure user is part of event
-    await this.requireAccess(eventId, userId);
+    // make sure user is part of event, and return it
+    const event = await this.requireAccess(eventId, userId);
+
+    if (section === 'agenda' && event.creatorId !== userId) {
+      throw new ForbiddenException('Only the event owner can edit the agenda');
+    }
 
     let data;
     if (section === 'agenda') {
@@ -76,11 +80,12 @@ export class MeetingDocumentsService {
           { participants: { some: { userId } } },
         ],
       },
-      select: { id: true },
+      select: { id: true, creatorId: true },
     });
 
     if (!event) {
       throw new NotFoundException('Event not found or inaccessible');
     }
+    return event;
   }
 }
