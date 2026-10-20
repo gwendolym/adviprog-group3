@@ -6,6 +6,7 @@ import { AppService } from './app.service.js';
 import { UsersModule } from './users/users.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { TeamsModule } from './teams/teams.module.js';
+import { EventsModule } from './events/events.module.js';
 import { WebsocketGateway } from './websocket/websocket.gateway.js';
 import { AuthenticationModule, WsAuthenticator } from '@nestjs/authentication';
 import { AuthModule } from './auth/auth.module.js';
@@ -20,6 +21,7 @@ const appUrl = process.env.APP_URL ?? process.env.ORIGIN ?? 'http://localhost:51
     UsersModule,
     PrismaModule,
     TeamsModule,
+    EventsModule,
     MailModule.forRootAsync({
       useFactory: () => ({
         transport: process.env.SMTP_URL ? new SmtpTransport({ url: process.env.SMTP_URL }) : new LogMailTransport(),

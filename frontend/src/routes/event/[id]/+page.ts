@@ -15,10 +15,16 @@ export type EventData = {
 		name: string;
 		email: string;
 	} | null;
+	team: { id: string; name: string } | null;
+	isPublic: boolean;
 };
 
 export const load: PageLoad = async function load({ params, fetch }) {
 	const response = await fetch(`/api/events/${params.id}`);
+
+	if (response.status === 403) {
+		error(403, "You're not a member of this event's team");
+	}
 
 	if (!response.ok) {
 		error(404, 'Event not found');

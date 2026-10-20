@@ -14,6 +14,8 @@ describe('WebsocketGateway', () => {
 		findForEvent: vi.fn(),
 		updateSection: vi.fn(),
 	};
+	const teamMember = { findMany: vi.fn() };
+	const eventsService = { canAccess: vi.fn() };
 	const server = { to: vi.fn() };
 	const room = { emit: vi.fn() };
 	const eventId = 'event-1';
@@ -27,12 +29,14 @@ describe('WebsocketGateway', () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks();
-		event.findUnique.mockResolvedValue({ id: eventId });
+		event.findUnique.mockResolvedValue({ id: eventId, teamId: null });
+		eventsService.canAccess.mockResolvedValue(true);
 		server.to.mockReturnValue(room);
 		gateway = new WebsocketGateway(
-			{ event, participant: participants, user: users } as never,
+			{ event, participant: participants, user: users, teamMember } as never,
 			{ authenticateConnection: vi.fn() } as never,
-			documents as never
+			documents as never,
+			eventsService as never
 		);
 		gateway.server = server as never;
 	});
@@ -41,7 +45,7 @@ describe('WebsocketGateway', () => {
 	it('loads saved availability for a watched event', async () => {
 		const emit = vi.fn();
 		const join = vi.fn();
-		const client = { data: {}, join, emit } as never;
+		const client = { data: { userId: 1 }, join, emit } as never;
 		participants.findMany.mockResolvedValue([
 			{ name: participantName, availability: ['2026-10-02 09:00'], user: { email: 'ada@example.com' } }
 		]);
@@ -57,13 +61,46 @@ describe('WebsocketGateway', () => {
 	it('ignores unknown events', async () => {
 		const join = vi.fn();
 		const emit = vi.fn();
-		const client = { data: {}, join, emit } as never;
+		const client = { data: { userId: 1 }, join, emit } as never;
 		event.findUnique.mockResolvedValue(null);
 
 		await gateway.onWatch(eventId, client);
 
 		expect(join).not.toHaveBeenCalled();
 		expect(emit).not.toHaveBeenCalled();
+	});
+
+	it('rejects watchers outside the event team', async () => {
+		const data: Record<string, unknown> = { userId: 5, eventId: 'other-event' };
+		const join = vi.fn();
+		const emit = vi.fn();
+		event.findUnique.mockResolvedValue({ id: eventId, teamId: 'team-1' });
+		eventsService.canAccess.mockResolvedValue(false);
+
+		await gateway.onWatch(eventId, { data, join, emit } as never);
+
+		expect(join).not.toHaveBeenCalled();
+		expect(emit).toHaveBeenCalledWith('error', "Not a member of this event's team");
+		expect(data.eventId).toBeUndefined();
+	});
+
+	it('lists team members without responses as having no availability', async () => {
+		const emit = vi.fn();
+		event.findUnique.mockResolvedValue({ id: eventId, teamId: 'team-1' });
+		participants.findMany.mockResolvedValue([
+			{ name: 'ada@example.com', availability: cells, user: { email: 'ada@example.com' } }
+		]);
+		teamMember.findMany.mockResolvedValue([
+			{ user: { email: 'ada@example.com' } },
+			{ user: { email: 'bea@example.com' } }
+		]);
+
+		await gateway.onWatch(eventId, { data: { userId: 1 }, join: vi.fn(), emit } as never);
+
+		expect(emit).toHaveBeenCalledWith('participants', {
+			'ada@example.com': cells,
+			'bea@example.com': []
+		});
 	});
 
 	// Updating availability saves and broadcasts the new cells.
@@ -81,6 +118,27 @@ describe('WebsocketGateway', () => {
 		});
 		expect(server.to).toHaveBeenCalledWith(eventId);
 		expect(room.emit).toHaveBeenCalledWith('participants', { 'ada@example.com': cells });
+	});
+
+	it('keeps responses from people outside the team, like guests on a public event', async () => {
+		const emit = vi.fn();
+		event.findUnique.mockResolvedValue({ id: eventId, teamId: 'team-1' });
+		participants.findMany.mockResolvedValue([
+			{ name: 'ada@example.com', availability: cells, user: { email: 'ada@example.com' } },
+			{ name: 'cy@example.com', availability: cells, user: { email: 'cy@example.com' } }
+		]);
+		teamMember.findMany.mockResolvedValue([
+			{ user: { email: 'ada@example.com' } },
+			{ user: { email: 'bea@example.com' } }
+		]);
+
+		await gateway.onWatch(eventId, { data: { userId: 1 }, join: vi.fn(), emit } as never);
+
+		expect(emit).toHaveBeenCalledWith('participants', {
+			'ada@example.com': cells,
+			'bea@example.com': [],
+			'cy@example.com': cells
+		});
 	});
 
 	// Joining an event saves the participant's initial availability.

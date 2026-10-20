@@ -4,12 +4,17 @@
 	import { weekdayLabels, times, dateKey, rowLabel } from '$lib/calendar';
 	import { createEventPresenter } from '$lib/presenters/event.presenter.svelte';
 	import type { ActionData, PageData } from './$types';
-	import { format, parseISO } from 'date-fns';
 	import { resolve } from '$app/paths';
 	import { holidayCountries } from '$lib/holiday-countries';
+	import { publicEventHint } from '$lib/publicEvent';
+	import { formatDateRange } from '$lib/dateRange';
 
 	let { form, data }: { form: ActionData; data: PageData } = $props();
 	const eventPresenter = createEventPresenter();
+	let teamId = $derived(data.selectedTeamId ?? ''); // Starts from ?team=, the picker can override it
+	let linkAccess = $state(false);
+	// Without a team the event is open to anyone with the link anyway
+	const isPublic = $derived(!teamId || linkAccess);
 </script>
 
 <svelte:window onpointerup={eventPresenter.stopDragging} />
@@ -53,6 +58,42 @@
 				placeholder="Event name"
 				class={`mt-2 w-full max-w-md rounded-lg border px-4 py-3 text-center text-xl font-medium text-slate-900 outline-none focus:border-green-500 dark:text-slate-100 ${eventPresenter.createButtonHovered && !eventPresenter.eventName.trim() ? 'border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/30' : 'border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900'}`}
 			/>
+
+			{#if data.teams.length > 0}
+				<label
+					for="team-selector"
+					class="mt-5 block text-xs font-medium text-slate-500 dark:text-slate-400"
+				>
+					Team
+				</label>
+				<select
+					id="team-selector"
+					form="event-create"
+					name="teamId"
+					bind:value={teamId}
+					class="select-field mt-1.5 h-10 w-auto max-w-xs min-w-40 rounded-lg border border-slate-200 bg-white pr-9 pl-9 text-center text-sm text-slate-900 transition [text-align-last:center] hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-slate-600"
+				>
+					<option value="">None</option>
+					{#each data.teams as team (team.id)}
+						<option value={team.id}>{team.name}</option>
+					{/each}
+				</select>
+				<label
+					title={publicEventHint}
+					class="mt-3 flex items-center justify-center gap-2 text-sm text-slate-600 has-disabled:cursor-not-allowed has-disabled:opacity-50 dark:text-slate-300"
+				>
+					<input
+						type="checkbox"
+						form="event-create"
+						name="linkAccess"
+						disabled={!teamId}
+						checked={isPublic}
+						onchange={(event) => (linkAccess = event.currentTarget.checked)}
+						class="h-4 w-4 rounded border-slate-300 accent-green-600"
+					/>
+					Public
+				</label>
+			{/if}
 		</div>
 
 		{#if form?.error}
@@ -320,12 +361,8 @@
 			{:else}
 				<ul class="mx-auto max-w-2xl space-y-2">
 					{#each data.events as event (event.id)}
-						{@const dates = [...event.dates].sort()}
-						{@const first = dates[0] ? format(parseISO(dates[0]), 'd MMM yyyy') : undefined}
-						{@const last =
-							dates.length > 1
-								? format(parseISO(dates[dates.length - 1]), 'd MMM yyyy')
-								: undefined}
+						{@const role =
+							event.creatorId === data.currentUserId ? 'Created by you' : 'Participating'}
 
 						<li>
 							<a
@@ -337,16 +374,13 @@
 										{event.name}
 									</span>
 									<span class="block text-xs font-medium text-green-700 dark:text-green-400">
-										{event.creatorId === data.currentUserId ? 'Created by you' : 'Participating'}
+										{event.team ? `${event.team.name} · ${role}` : role}
 									</span>
 
 									<span class="block text-xs text-slate-500 dark:text-slate-400">
 										{event.dates.length}
 										{event.dates.length === 1 ? 'date' : 'dates'}
-										{first}
-										{#if last && first !== last}
-											- {last}
-										{/if}
+										{formatDateRange(event.dates)}
 									</span>
 								</span>
 

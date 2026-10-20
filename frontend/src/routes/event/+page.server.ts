@@ -3,6 +3,8 @@ import type { Actions, PageServerLoad } from './$types';
 import { holidayCountries } from '$lib/holiday-countries';
 import { loadHolidays, preferredHolidayCountry } from '$lib/holidays';
 
+type EventTeam = { id: string; name: string };
+
 type Event = {
 	id: string;
 	name: string;
@@ -11,19 +13,21 @@ type Event = {
 	endTime: string;
 	timezone: string;
 	creatorId: number;
+	team: EventTeam | null;
 };
 
 const countryCodes = new Set(holidayCountries.map(({ value }) => value));
 
-export const load: PageServerLoad = async ({ fetch, parent }) => {
+export const load: PageServerLoad = async ({ fetch, parent, url }) => {
 	const { user } = await parent();
 	if (!user) redirect(303, '/login');
 	const holidayCountry = preferredHolidayCountry(user.holidayCountry);
 
 	const year = new Date().getFullYear();
 
-	const [eventsResponse, holidays] = await Promise.all([
+	const [eventsResponse, teamsResponse, holidays] = await Promise.all([
 		fetch('/api/events'),
+		fetch('/api/teams'),
 		loadHolidays(fetch, year, holidayCountry)
 	]);
 
@@ -32,7 +36,12 @@ export const load: PageServerLoad = async ({ fetch, parent }) => {
 	}
 
 	const events: Event[] = await eventsResponse.json();
-	return { holidays, events, holidayCountry, currentUserId: user.id };
+	// Teams are optional, okay to skip
+	const teams: EventTeam[] = teamsResponse.ok ? await teamsResponse.json() : [];
+	// Preselect from ?team=<id>, only if the user is in that team
+	const requestedTeam = url.searchParams.get('team');
+	const selectedTeamId = teams.some((team) => team.id === requestedTeam) ? requestedTeam : '';
+	return { holidays, events, teams, selectedTeamId, holidayCountry, currentUserId: user.id };
 };
 
 type CreateEventInput = {
@@ -41,6 +50,8 @@ type CreateEventInput = {
 	startTime: string;
 	endTime: string;
 	timezone: string;
+	teamId?: string;
+	linkAccess?: boolean;
 };
 
 type CreatedEvent = { id: string };
@@ -74,6 +85,11 @@ export const actions: Actions = {
 			endTime: form.get('endTime')?.toString() ?? '',
 			timezone: form.get('timezone')?.toString() ?? ''
 		};
+		const teamId = form.get('teamId')?.toString();
+		if (teamId) {
+			input.teamId = teamId;
+			input.linkAccess = form.has('linkAccess');
+		}
 
 		if (
 			!input.name ||
@@ -98,6 +114,10 @@ export const actions: Actions = {
 		} catch (err) {
 			console.error('Failed to reach the events API', err);
 			return fail(500, { error: "Couldn't create the event. Please try again." });
+		}
+
+		if (response.status === 403) {
+			return fail(403, { error: "You're not a member of that team." });
 		}
 
 		if (!response.ok) {

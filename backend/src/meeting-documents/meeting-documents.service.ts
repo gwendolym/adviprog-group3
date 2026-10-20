@@ -78,6 +78,7 @@ export class MeetingDocumentsService {
         OR: [
           { creatorId: userId },
           { participants: { some: { userId } } },
+          { team: { members: { some: { userId } } } },
         ],
       },
       select: { id: true, creatorId: true },

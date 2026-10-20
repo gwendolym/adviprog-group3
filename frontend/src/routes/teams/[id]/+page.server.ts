@@ -10,6 +10,13 @@ type TeamMember = {
 	};
 };
 
+type TeamEvent = {
+	id: string;
+	name: string;
+	dates: string[];
+	isPublic: boolean;
+};
+
 type TeamDetails = {
 	id: string;
 	name: string;
@@ -25,7 +32,10 @@ function loginUrl(teamId: string) {
 
 // Get team details
 export const load: PageServerLoad = async ({ params, fetch }) => {
-	const response = await fetch(`/api/teams/${params.id}`);
+	const [response, eventsResponse] = await Promise.all([
+		fetch(`/api/teams/${params.id}`),
+		fetch(`/api/teams/${params.id}/events`)
+	]);
 
 	if (response.status === 401) {
 		redirect(303, loginUrl(params.id));
@@ -42,7 +52,9 @@ export const load: PageServerLoad = async ({ params, fetch }) => {
 	const team = (await response.json()) as TeamDetails;
 
 	return {
-		team
+		team,
+		// Only members get a list, everyone else (and any failure) gets none
+		events: eventsResponse.ok ? ((await eventsResponse.json()) as TeamEvent[]) : []
 	};
 };
 
