@@ -4,11 +4,16 @@ import {
   Controller,
   Get,
   Param,
+  Patch,
   Post,
 } from '@nestjs/common';
 import { CurrentUser } from '@nestjs/authentication';
 import type { User } from '../generated/prisma/client.js';
-import { EventsService, type CreateEventInput } from './events.service.js';
+import {
+  EventsService,
+  type CreateEventInput,
+  type UpdateEventInput,
+} from './events.service.js';
 
 @Controller('events')
 export class EventsController {
@@ -43,5 +48,18 @@ export class EventsController {
     }
 
     return this.eventsService.createEvent(event, user.id);
+  }
+
+  @Patch(':id')
+  updateEvent(
+    @Param('id') id: string,
+    @Body() input: UpdateEventInput,
+    @CurrentUser() user: User,
+  ) {
+    if (typeof input?.name !== 'string' || !input.name.trim()) {
+      throw new BadRequestException('Invalid event data');
+    }
+
+    return this.eventsService.updateEvent(id, input, user.id);
   }
 }

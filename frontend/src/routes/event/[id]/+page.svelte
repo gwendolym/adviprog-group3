@@ -5,14 +5,16 @@
 	import PublicBadge from '$lib/components/PublicBadge.svelte';
 	import { cellKey } from '$lib/availability';
 	import { createAvailabilityPresenter } from '$lib/presenters/availability.presenter.svelte';
-	import type { PageData } from './$types';
+	import type { ActionData, PageData } from './$types';
+	import EditEvent from './EditEvent.svelte';
 	import MeetingDocument from './MeetingDocument.svelte';
 
-	let { data }: { data: PageData } = $props(); // Svelte updates route props through this binding.
+	let { data, form }: { data: PageData; form: ActionData } = $props(); // Svelte updates route props through this binding.
 	const availability = createAvailabilityPresenter(page.params.id ?? '');
 
 	const event = $derived(data.event);
 	const isOwner = $derived(event.creatorId !== null && data.user?.id === event.creatorId);
+	let editing = $state(false);
 	const times = $derived(data.times);
 	const days = $derived(data.days);
 	const gridColumns = $derived(data.gridColumns);
@@ -65,11 +67,36 @@
 					<p class="text-sm font-medium text-slate-500 dark:text-slate-400">Meeting availability</p>
 				{/if}
 				<div class="mt-1 flex items-center gap-3">
-					<h1 class="text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
-						{event.name}
-					</h1>
-					{#if event.isPublic}
-						<PublicBadge />
+					{#if editing}
+						<EditEvent name={event.name} error={form?.error} onclose={() => (editing = false)} />
+					{:else}
+						<h1 class="text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
+							{event.name}
+						</h1>
+						{#if isOwner}
+							<button
+								type="button"
+								aria-label="Edit name"
+								title="Edit name"
+								class="rounded-lg border border-slate-300 p-1.5 hover:bg-black/5 dark:border-slate-700 dark:hover:bg-white/10"
+								onclick={() => (editing = true)}
+							>
+								<svg
+									class="h-3.5 w-3.5"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+									aria-hidden="true"
+								>
+									<path d="M12 20h9" />
+									<path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+								</svg>
+							</button>
+						{/if}
+						{#if event.isPublic}
+							<PublicBadge />
+						{/if}
 					{/if}
 				</div>
 				<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">

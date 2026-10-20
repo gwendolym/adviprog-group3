@@ -3,7 +3,13 @@ import { EventsService, MEET_LINKS_PER_USER } from './events.service.js';
 
 describe('EventsService', () => {
   const prisma = {
-    event: { findUnique: vi.fn(), findMany: vi.fn(), count: vi.fn(), create: vi.fn() },
+    event: {
+      findUnique: vi.fn(),
+      findMany: vi.fn(),
+      count: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+    },
     teamMember: { findUnique: vi.fn() },
   };
   const input = {
@@ -82,6 +88,17 @@ describe('EventsService', () => {
       prisma.teamMember.findUnique.mockResolvedValue(null);
 
       await expect(service.getEvent('e1', 2)).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('updateEvent', () => {
+    it('rejects anyone but the creator with 403', async () => {
+      prisma.event.findUnique.mockResolvedValue({ id: 'e1', creatorId: 1 });
+
+      await expect(service.updateEvent('e1', { name: 'Retro' }, 2)).rejects.toThrow(
+        ForbiddenException,
+      );
+      expect(prisma.event.update).not.toHaveBeenCalled();
     });
   });
 

@@ -29,6 +29,10 @@ export interface CreateEventInput {
   linkAccess?: boolean;
 }
 
+export interface UpdateEventInput {
+  name: string;
+}
+
 @Injectable()
 export class EventsService {
   constructor(
@@ -86,6 +90,16 @@ export class EventsService {
         meetUrl: await this.createMeetingFor(userId),
       },
     });
+  }
+
+  async updateEvent(id: string, input: UpdateEventInput, userId: number) {
+    const event = await this.prisma.event.findUnique({ where: { id } });
+    if (!event) throw new NotFoundException('Event not found');
+    if (event.creatorId !== userId) {
+      throw new ForbiddenException('Only the event creator can edit this event');
+    }
+
+    return this.prisma.event.update({ where: { id }, data: { name: input.name.trim() } });
   }
 
   private async createMeetingFor(creatorId: number): Promise<string | null> {
