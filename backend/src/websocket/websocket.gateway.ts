@@ -9,6 +9,8 @@ import {
 import { WsAuthenticator } from '@nestjs/authentication';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { Server, Socket } from 'socket.io';
+import { MeetingDocumentsService } from '../meeting-documents/meeting-documents.service.js';
+import { MEETING_DOCUMENT_MAX_LENGTH, type MeetingDocumentSection, } from '../meeting-documents/meeting-document.dto.js';
 
 @WebSocketGateway({
 	path: '/sockets',
@@ -20,7 +22,8 @@ import { Server, Socket } from 'socket.io';
 export class WebsocketGateway implements OnGatewayConnection {
 	constructor(
 		private readonly prisma: PrismaService,
-		private readonly wsAuth: WsAuthenticator
+		private readonly wsAuth: WsAuthenticator,
+		private readonly documents: MeetingDocumentsService
 	) { }
 
 	@WebSocketServer()
@@ -134,5 +137,69 @@ export class WebsocketGateway implements OnGatewayConnection {
 
 	private isValidCell(cell: unknown): cell is string {
 		return typeof cell === 'string' && /^[A-Z][a-z]{2} \d{1,2}-(?:[01]\d|2[0-3]):00$/.test(cell);
+	}
+
+	@SubscribeMessage('watch-document')
+	async onWatchDocument(
+		@MessageBody() eventId: string,
+		@ConnectedSocket() client: Socket,
+	) {
+		const { userId, documentEventId: previousEventId } = client.data;
+
+		if (typeof eventId !== 'string' || !userId) return;
+
+		try {
+			const document = await this.documents.findForEvent(eventId, userId);
+
+			if (previousEventId && previousEventId !== eventId) {
+				await client.leave(`document:${previousEventId}`);
+			}
+
+			client.data.documentEventId = eventId;
+			await client.join(`document:${eventId}`);
+			client.emit('meeting-document', document);
+		} catch {
+			client.emit('document-error', 'Unable to load this meeting document');
+		}
+	}
+
+	@SubscribeMessage('update-document-section')
+	async onUpdateDocumentSection(
+		@MessageBody() payload: { section: MeetingDocumentSection; content: string },
+		@ConnectedSocket() client: Socket,
+	) {
+		const { documentEventId: eventId, userId } = client.data;
+
+		if (
+			!eventId ||
+			!userId ||
+			!payload ||
+			(payload.section !== 'agenda' && payload.section !== 'notes') ||
+			typeof payload.content !== 'string' ||
+			payload.content.length > MEETING_DOCUMENT_MAX_LENGTH
+		) {
+			client.emit('document-error', 'Invalid document update');
+			return;
+		}
+
+		try {
+			const document = await this.documents.updateSection(
+			eventId,
+			userId,
+			payload.section,
+			payload.content,
+			);
+
+			const update = {
+			section: payload.section,
+			content: payload.content,
+			updatedAt: document.updatedAt.toISOString(),
+			};
+
+			client.emit('document-saved', update);
+			client.to(`document:${eventId}`).emit('document-section-updated', update);
+		} catch {
+			client.emit('document-error', 'Unable to save meeting document');
+		}
 	}
 }

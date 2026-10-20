@@ -4,15 +4,22 @@
 	import { cellKey } from '$lib/availability';
 	import { createAvailabilityPresenter } from '$lib/presenters/availability.presenter.svelte';
 	import type { PageData } from './$types';
+	import MeetingDocument from './MeetingDocument.svelte';
 
 	let { data }: { data: PageData } = $props(); // Svelte updates route props through this binding.
 	const availability = createAvailabilityPresenter(page.params.id ?? '');
 
 	const event = $derived(data.event);
+	const isOwner = $derived(event.creatorId !== null && data.user?.id === event.creatorId);
 	const times = $derived(data.times);
 	const days = $derived(data.days);
 	const gridColumns = $derived(data.gridColumns);
 	const gridMinWidth = $derived(data.gridMinWidth);
+	const canViewDocument = $derived(
+		data.user !== null &&
+			(event.creatorId === data.user.id ||
+				Object.hasOwn(availability.participants, data.user.email))
+	);
 
 	onMount(function initializeSocket() {
 		return availability.initialize();
@@ -263,7 +270,13 @@
 											: ''
 									}`}
 								>
-									<span class="block truncate" title={name}>{name}</span>
+									<span class="flex min-w-0 items-center gap-2">
+										{#if event.creator?.email === name}
+											<span class="shrink-0 text-amber-500" aria-hidden="true">★</span>
+											<span class="sr-only">Meeting owner:</span>
+										{/if}
+										<span class="min-w-0 truncate" title={name}>{name}</span>
+									</span>
 								</li>
 							{/each}
 						</ul>
@@ -271,5 +284,17 @@
 				</div>
 			</section>
 		</div>
+		{#if canViewDocument}
+			<MeetingDocument eventId={page.params.id ?? ''} {isOwner} />
+		{:else}
+			<section
+				class="mt-8 rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900"
+			>
+				<h2 class="text-xl font-semibold">Meeting document</h2>
+				<p class="mt-2 text-sm text-slate-500">
+					Save your availability to join this event and view its agenda and notes.
+				</p>
+			</section>
+		{/if}
 	</div>
 </section>

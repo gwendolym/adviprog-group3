@@ -9,6 +9,12 @@ export type EventData = {
 	endTime: string;
 	timezone: string;
 	meetUrl: string | null;
+	creatorId: number | null;
+	creator: {
+		id: number;
+		name: string;
+		email: string;
+	} | null;
 };
 
 export const load: PageLoad = async function load({ params, fetch }) {

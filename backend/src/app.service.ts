@@ -16,7 +16,14 @@ export class AppService {
   }
 
   async getEvent(id: string) {
-    const event = await this.prisma.event.findUnique({ where: { id } });
+    const event = await this.prisma.event.findUnique({
+      where: { id },
+      include: {
+        creator: {
+          select: { id: true, name: true, email: true },
+        },
+      },
+    });
     if (!event) throw new NotFoundException('Event not found'); // Sends 404 response if event is not found
     return event;
   }

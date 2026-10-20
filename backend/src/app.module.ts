@@ -11,6 +11,7 @@ import { AuthenticationModule, WsAuthenticator } from '@nestjs/authentication';
 import { AuthModule } from './auth/auth.module.js';
 import { GoogleModule } from './google/google.module.js';
 import { oidcOptions } from './auth/oidc.config.js';
+import { MeetingDocumentsModule } from './meeting-documents/meeting-documents.module.js';
 
 const appUrl = process.env.APP_URL ?? process.env.ORIGIN ?? 'http://localhost:5173';
 
@@ -41,6 +42,7 @@ const appUrl = process.env.APP_URL ?? process.env.ORIGIN ?? 'http://localhost:51
     }),
     AuthModule,
     GoogleModule,
+    MeetingDocumentsModule,
   ],
   controllers: [AppController],
   providers: [AppService, WebsocketGateway, WsAuthenticator],
