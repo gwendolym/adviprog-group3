@@ -5,6 +5,11 @@
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
+	const modes = [
+		{ value: 'signin', label: 'Log in' },
+		{ value: 'signup', label: 'Sign up' }
+	] as const;
+
 	let mode = $state<'signin' | 'signup'>('signin');
 	let submitting = $state(false);
 
@@ -26,28 +31,20 @@
 		class="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-6 sm:p-8 dark:border-slate-800 dark:bg-slate-900"
 	>
 		<div class="mb-6 flex rounded-lg bg-slate-100 p-1 text-sm font-medium dark:bg-slate-800">
-			<button
-				type="button"
-				class={`flex-1 rounded-md py-2 transition ${
-					mode === 'signin'
-						? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-slate-100'
-						: 'text-slate-500 dark:text-slate-400'
-				}`}
-				onclick={() => (mode = 'signin')}
-			>
-				Log in
-			</button>
-			<button
-				type="button"
-				class={`flex-1 rounded-md py-2 transition ${
-					mode === 'signup'
-						? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-slate-100'
-						: 'text-slate-500 dark:text-slate-400'
-				}`}
-				onclick={() => (mode = 'signup')}
-			>
-				Sign up
-			</button>
+			{#each modes as { value, label } (value)}
+				<button
+					type="button"
+					aria-pressed={mode === value}
+					class={`flex-1 rounded-md py-2 transition focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:outline-none ${
+						mode === value
+							? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-slate-100'
+							: 'text-slate-500 hover:bg-white/60 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-700/50 dark:hover:text-slate-100'
+					}`}
+					onclick={() => (mode = value)}
+				>
+					{label}
+				</button>
+			{/each}
 		</div>
 
 		<h1 class="text-center text-xl font-semibold text-slate-900 dark:text-slate-100">
@@ -120,7 +117,7 @@
 					id="email"
 					name="email"
 					type="email"
-					autocomplete="email"
+					autocomplete="username"
 					required
 					class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-green-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-green-500"
 				/>

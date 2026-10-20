@@ -1,6 +1,15 @@
 @import 'tailwindcss';
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Tailwind v4 leaves buttons with the default arrow cursor, so opt interactive controls into the pointer */
+@layer base {
+	button:not(:disabled),
+	[role='button']:not(:disabled),
+	select:not(:disabled) {
+		cursor: pointer;
+	}
+}
+
 :root {
 	color-scheme: light;
 }

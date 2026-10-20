@@ -34,7 +34,7 @@
 		<nav class="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
 			<a
 				href={resolve('/')}
-				class="rounded text-xl font-semibold tracking-tight focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:outline-none dark:focus-visible:ring-slate-500"
+				class="rounded text-xl font-semibold tracking-tight transition hover:text-slate-600 focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:outline-none dark:hover:text-slate-300 dark:focus-visible:ring-slate-500"
 			>
 				Meetly
 			</a>
