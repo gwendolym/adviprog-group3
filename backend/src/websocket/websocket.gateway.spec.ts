@@ -88,8 +88,7 @@ describe('WebsocketGateway', () => {
 		const emit = vi.fn();
 		event.findUnique.mockResolvedValue({ id: eventId, teamId: 'team-1' });
 		participants.findMany.mockResolvedValue([
-			{ name: 'ada@example.com', availability: cells, user: { email: 'ada@example.com' } },
-			{ name: 'gone@example.com', availability: cells, user: { email: 'gone@example.com' } }
+			{ name: 'ada@example.com', availability: cells, user: { email: 'ada@example.com' } }
 		]);
 		teamMember.findMany.mockResolvedValue([
 			{ user: { email: 'ada@example.com' } },
@@ -119,6 +118,27 @@ describe('WebsocketGateway', () => {
 		});
 		expect(server.to).toHaveBeenCalledWith(eventId);
 		expect(room.emit).toHaveBeenCalledWith('participants', { 'ada@example.com': cells });
+	});
+
+	it('keeps responses from people outside the team, like guests on a public event', async () => {
+		const emit = vi.fn();
+		event.findUnique.mockResolvedValue({ id: eventId, teamId: 'team-1' });
+		participants.findMany.mockResolvedValue([
+			{ name: 'ada@example.com', availability: cells, user: { email: 'ada@example.com' } },
+			{ name: 'cy@example.com', availability: cells, user: { email: 'cy@example.com' } }
+		]);
+		teamMember.findMany.mockResolvedValue([
+			{ user: { email: 'ada@example.com' } },
+			{ user: { email: 'bea@example.com' } }
+		]);
+
+		await gateway.onWatch(eventId, { data: { userId: 1 }, join: vi.fn(), emit } as never);
+
+		expect(emit).toHaveBeenCalledWith('participants', {
+			'ada@example.com': cells,
+			'bea@example.com': [],
+			'cy@example.com': cells
+		});
 	});
 
 	// Joining an event saves the participant's initial availability.

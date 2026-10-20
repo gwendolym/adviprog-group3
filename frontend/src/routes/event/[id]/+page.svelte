@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
+	import PublicBadge from '$lib/components/PublicBadge.svelte';
 	import { cellKey } from '$lib/availability';
 	import { createAvailabilityPresenter } from '$lib/presenters/availability.presenter.svelte';
 	import type { PageData } from './$types';
@@ -63,9 +64,14 @@
 				{:else}
 					<p class="text-sm font-medium text-slate-500 dark:text-slate-400">Meeting availability</p>
 				{/if}
-				<h1 class="mt-1 text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
-					{event.name}
-				</h1>
+				<div class="mt-1 flex items-center gap-3">
+					<h1 class="text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
+						{event.name}
+					</h1>
+					{#if event.isPublic}
+						<PublicBadge />
+					{/if}
+				</div>
 				<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
 					{event.startTime} - {event.endTime} ({event.timezone})
 				</p>

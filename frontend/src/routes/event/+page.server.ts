@@ -51,6 +51,7 @@ type CreateEventInput = {
 	endTime: string;
 	timezone: string;
 	teamId?: string;
+	linkAccess?: boolean;
 };
 
 type CreatedEvent = { id: string };
@@ -85,7 +86,10 @@ export const actions: Actions = {
 			timezone: form.get('timezone')?.toString() ?? ''
 		};
 		const teamId = form.get('teamId')?.toString();
-		if (teamId) input.teamId = teamId;
+		if (teamId) {
+			input.teamId = teamId;
+			input.linkAccess = form.has('linkAccess');
+		}
 
 		if (
 			!input.name ||

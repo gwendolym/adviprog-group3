@@ -6,10 +6,15 @@
 	import type { ActionData, PageData } from './$types';
 	import { resolve } from '$app/paths';
 	import { holidayCountries } from '$lib/holiday-countries';
+	import { publicEventHint } from '$lib/publicEvent';
 	import { formatDateRange } from '$lib/dateRange';
 
 	let { form, data }: { form: ActionData; data: PageData } = $props();
 	const eventPresenter = createEventPresenter();
+	let teamId = $derived(data.selectedTeamId ?? ''); // Starts from ?team=, the picker can override it
+	let linkAccess = $state(false);
+	// Without a team the event is open to anyone with the link anyway
+	const isPublic = $derived(!teamId || linkAccess);
 </script>
 
 <svelte:window onpointerup={eventPresenter.stopDragging} />
@@ -65,7 +70,7 @@
 					id="team-selector"
 					form="event-create"
 					name="teamId"
-					value={data.selectedTeamId}
+					bind:value={teamId}
 					class="select-field mt-1.5 h-10 w-auto max-w-xs min-w-40 rounded-lg border border-slate-200 bg-white pr-9 pl-9 text-center text-sm text-slate-900 transition [text-align-last:center] hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:hover:border-slate-600"
 				>
 					<option value="">None</option>
@@ -73,6 +78,21 @@
 						<option value={team.id}>{team.name}</option>
 					{/each}
 				</select>
+				<label
+					title={publicEventHint}
+					class="mt-3 flex items-center justify-center gap-2 text-sm text-slate-600 has-disabled:cursor-not-allowed has-disabled:opacity-50 dark:text-slate-300"
+				>
+					<input
+						type="checkbox"
+						form="event-create"
+						name="linkAccess"
+						disabled={!teamId}
+						checked={isPublic}
+						onchange={(event) => (linkAccess = event.currentTarget.checked)}
+						class="h-4 w-4 rounded border-slate-300 accent-green-600"
+					/>
+					Public
+				</label>
 			{/if}
 		</div>
 

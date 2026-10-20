@@ -14,6 +14,7 @@ type TeamEvent = {
 	id: string;
 	name: string;
 	dates: string[];
+	isPublic: boolean;
 };
 
 type TeamDetails = {

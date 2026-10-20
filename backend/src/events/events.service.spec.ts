@@ -26,11 +26,17 @@ describe('EventsService', () => {
 
   describe('getTeamEvents', () => {
     it('lists a team\'s events, newest first, for its members', async () => {
-      const events = [{ id: 'e1', teamId: 't1' }];
+      const events = [
+        { id: 'e1', teamId: 't1', linkAccess: false },
+        { id: 'e2', teamId: 't1', linkAccess: true },
+      ];
       prisma.teamMember.findUnique.mockResolvedValue({ userId: 1 });
       prisma.event.findMany.mockResolvedValue(events);
 
-      await expect(service.getTeamEvents('t1', 1)).resolves.toBe(events);
+      await expect(service.getTeamEvents('t1', 1)).resolves.toEqual([
+        { ...events[0], isPublic: false },
+        { ...events[1], isPublic: true },
+      ]);
 
     });
 
@@ -50,22 +56,29 @@ describe('EventsService', () => {
     });
 
     it('returns events without a team to any user', async () => {
-      const event = { id: 'e1', teamId: null };
+      const event = { id: 'e1', teamId: null, linkAccess: false };
       prisma.event.findUnique.mockResolvedValue(event);
 
-      await expect(service.getEvent('e1', 1)).resolves.toBe(event);
+      await expect(service.getEvent('e1', 1)).resolves.toEqual({ ...event, isPublic: true });
+    });
+
+    it('returns team events to anyone when they allow link access', async () => {
+      const event = { id: 'e1', teamId: 't1', linkAccess: true };
+      prisma.event.findUnique.mockResolvedValue(event);
+
+      await expect(service.getEvent('e1', 2)).resolves.toEqual({ ...event, isPublic: true });
     });
 
     it('returns team events to team members', async () => {
-      const event = { id: 'e1', teamId: 't1' };
+      const event = { id: 'e1', teamId: 't1', linkAccess: false };
       prisma.event.findUnique.mockResolvedValue(event);
       prisma.teamMember.findUnique.mockResolvedValue({ userId: 1 });
 
-      await expect(service.getEvent('e1', 1)).resolves.toBe(event);
+      await expect(service.getEvent('e1', 1)).resolves.toEqual({ ...event, isPublic: false });
     });
 
     it('rejects team events for non-members with 403', async () => {
-      prisma.event.findUnique.mockResolvedValue({ id: 'e1', teamId: 't1' });
+      prisma.event.findUnique.mockResolvedValue({ id: 'e1', teamId: 't1', linkAccess: false });
       prisma.teamMember.findUnique.mockResolvedValue(null);
 
       await expect(service.getEvent('e1', 2)).rejects.toThrow(ForbiddenException);
@@ -84,6 +97,7 @@ describe('EventsService', () => {
           dates: [new Date('2026-10-20')],
           creatorId: 1,
           teamId: null,
+          linkAccess: false,
           meetUrl: 'https://meet.google.com/abc-defg-hij',
         },
       });
@@ -112,6 +126,21 @@ describe('EventsService', () => {
 
       expect(prisma.event.create).toHaveBeenCalledWith({
         data: expect.objectContaining({ teamId: 't1', creatorId: 1 }),
+      });
+    });
+
+    it('stores link access only for team events', async () => {
+      prisma.teamMember.findUnique.mockResolvedValue({ userId: 1 });
+      prisma.event.create.mockResolvedValue({ id: 'e1' });
+
+      await service.createEvent({ ...input, teamId: 't1', linkAccess: true }, 1);
+      expect(prisma.event.create).toHaveBeenLastCalledWith({
+        data: expect.objectContaining({ teamId: 't1', linkAccess: true }),
+      });
+
+      await service.createEvent({ ...input, linkAccess: true }, 1);
+      expect(prisma.event.create).toHaveBeenLastCalledWith({
+        data: expect.objectContaining({ teamId: null, linkAccess: false }),
       });
     });
 

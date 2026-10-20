@@ -139,10 +139,10 @@ export class WebsocketGateway implements OnGatewayConnection {
 		);
 		if (!members) return responses;
 
-		// Team events list every current member, with no availability until they respond
-		return Object.fromEntries(
-			members.map(({ user }) => [user.email, responses[user.email] ?? []])
-		);
+		// Team events list every current member, with no availability until they respond.
+		// Anyone else who responded, like a guest on a public event, stays listed too
+		const listed = Object.fromEntries(members.map(({ user }) => [user.email, [] as string[]]));
+		return { ...listed, ...responses };
 	}
 
 	private async saveAvailability(eventId: string, userId: number, availability: string[]) {

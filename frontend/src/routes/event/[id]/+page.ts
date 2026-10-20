@@ -16,6 +16,7 @@ export type EventData = {
 		email: string;
 	} | null;
 	team: { id: string; name: string } | null;
+	isPublic: boolean;
 };
 
 export const load: PageLoad = async function load({ params, fetch }) {

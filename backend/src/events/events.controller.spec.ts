@@ -26,6 +26,7 @@ describe('EventsController', () => {
 
   it.each([
     ['a non-string teamId', { ...valid, teamId: 5 }],
+    ['a non-boolean linkAccess', { ...valid, teamId: 't1', linkAccess: 'yes' }],
   ])('rejects %s', async (_label, body) => {
     await expect(controller.createEvent(body as never, user)).rejects.toThrow(
       BadRequestException,

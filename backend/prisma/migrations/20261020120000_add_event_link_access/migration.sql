@@ -1,0 +1,1 @@
+ALTER TABLE "Event" ADD COLUMN "linkAccess" BOOLEAN NOT NULL DEFAULT false;

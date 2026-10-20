@@ -36,7 +36,8 @@ export class EventsController {
       typeof event.startTime !== 'string' ||
       typeof event.endTime !== 'string' ||
       typeof event.timezone !== 'string' ||
-      (event.teamId !== undefined && typeof event.teamId !== 'string')
+      (event.teamId !== undefined && typeof event.teamId !== 'string') ||
+      (event.linkAccess !== undefined && typeof event.linkAccess !== 'boolean')
     ) {
       throw new BadRequestException('Invalid event data');
     }

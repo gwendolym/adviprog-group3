@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
+	import PublicBadge from '$lib/components/PublicBadge.svelte';
 	import { formatDateRange } from '$lib/dateRange';
 	import type { ActionData, PageData } from './$types';
 
@@ -172,7 +173,12 @@
 								class="flex items-center justify-between gap-4 p-4 hover:bg-slate-50 dark:hover:bg-slate-800"
 							>
 								<div class="min-w-0">
-									<p class="truncate font-medium">{event.name}</p>
+									<div class="flex items-center gap-2">
+										<p class="truncate font-medium">{event.name}</p>
+										{#if event.isPublic}
+											<PublicBadge />
+										{/if}
+									</div>
 									<p class="text-sm text-slate-500">{formatDateRange(event.dates)}</p>
 								</div>
 
